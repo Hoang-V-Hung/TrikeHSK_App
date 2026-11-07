@@ -1,0 +1,53 @@
+export interface DashboardStatsResponse {
+  studyDate: string;
+  checkedInToday: boolean;
+  timeZone?: string;
+  timeTodaySeconds?: number;
+  time7DaysSeconds?: number;
+  timeTotalSeconds?: number;
+  chart7DaysSeconds?: number[];
+  chart7Dates?: string[];
+  weekDaysStudied?: number;
+  weekAverageSeconds?: number;
+  weekLongestStreak?: number;
+  activityTimes?: Record<'review' | 'practice' | 'exam' | 'pk', number>;
+  vocabularyStats?: { learnedCount: number; masteredCount: number; learningCount: number; reviewCount: number };
+  timeToday: number;
+  time7Days: number;
+  timeTotal: number;
+  chart7Days: number[];
+  totalDaysStudied: number;
+  averagePerDay: number;
+  longestStreak: number;
+}
+
+export interface PingSessionDto {
+  durationInSeconds: number;
+  module: string;
+}
+
+export interface VocabularyProgressDto {
+  vocabularyId: number;
+  action: 'studied' | 'remembered' | 'unknown';
+}
+
+export interface VocabularyProgressResponse {
+  vocabularyId: number;
+  status: 'learning' | 'remembered' | 'needs_review';
+  lastStudiedAt: string;
+}
+
+export interface PingSessionResponse {
+  id: number;
+  studyDate: string;
+  durationInSeconds: number;
+  module: string;
+}
+
+export interface CheckInResponse extends PingSessionResponse {
+  expAwarded: number;
+  alreadyCheckedIn: boolean;
+  level: number;
+  currentExp: number;
+  totalExp: number;
+}

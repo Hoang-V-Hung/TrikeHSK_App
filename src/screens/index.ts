@@ -1,0 +1,13 @@
+export { default as Example } from './Example/Example';
+export { default as Startup } from './Startup/Startup';
+export { default as Onboarding } from './Onboarding/Onboarding';
+export { default as Login } from './Login/Login';
+export { default as Register } from './Register/Register';
+export { default as Home } from './Home/Home';
+export { default as Statistics } from './Statistics/Statistics';
+export { default as Profile } from './Profile/Profile';
+export { default as Education } from './Education/Education';
+export { default as Game } from './Game/Game';
+export { default as Survey } from './Survey/Survey';
+export { default as ForgotPassword } from './ForgotPassword/ForgotPassword';
+export { default as ResetPassword } from './ForgotPassword/ResetPassword';

@@ -1,0 +1,148 @@
+import React, { useState } from 'react';
+import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import { ExamResult } from '../../types';
+import { hasExamAnswer, isExamAnswerCorrect } from '@/services/exams/answers';
+import { ms, hs, vs, useTheme } from '@/theme';
+import { ScreenHeader } from '@/components/molecules';
+
+interface Props {
+  result: ExamResult;
+  onBack: () => void;
+  onReview: () => void;
+  onRetake: () => void;
+}
+
+export const HskExamResultView = ({ result, onBack, onReview, onRetake }: Props) => {
+  const { colors } = useTheme();
+  const [filterMode, setFilterMode] = useState<'ALL' | 'WRONG'>('WRONG');
+  const examIndex = result.examId.split('_')[1] || '1';
+
+  const questions = result.questions || [];
+
+  const gradedCount = result.gradedCount ?? result.totalCount;
+  const wrongCount = gradedCount - result.correctCount;
+  const sections = [
+    { type: 'LISTENING', title: 'Nghe', correct: result.listeningCorrect },
+    { type: 'READING', title: 'Đọc', correct: result.readingCorrect },
+    { type: 'WRITING', title: 'Viết', correct: result.writingCorrect ?? 0 },
+  ].map(section => ({ ...section, questions: questions.filter(q => q.type === section.type) }))
+    .filter(section => section.questions.length > 0);
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F3F4F6' }}>
+      {/* Header */}
+      <ScreenHeader
+        title="Quay lại danh sách đề thi"
+        onBack={onBack}
+        titleColor="#374151"
+        style={{
+          backgroundColor: '#FFFFFF',
+          borderBottomWidth: 1,
+          borderBottomColor: '#E5E7EB',
+          paddingTop: vs(12),
+          paddingBottom: vs(16),
+        }}
+      />
+
+      <ScrollView contentContainerStyle={{ padding: ms(16) }} showsVerticalScrollIndicator={false}>
+        {/* Top Result Card */}
+        <View style={{ backgroundColor: colors.surface, borderRadius: ms(12), padding: ms(16), marginBottom: vs(16), borderWidth: 1, borderColor: '#E5E7EB' }}>
+
+          <View style={{ backgroundColor: '#F4EBE6', borderRadius: ms(8), paddingVertical: vs(24), alignItems: 'center', marginBottom: vs(20) }}>
+            <Text style={{ fontSize: ms(40), fontWeight: '900', color: '#DC2626', marginBottom: vs(4) }}>
+              {result.score === null ? 'Chưa chấm tự động' : `${result.score}%`}
+            </Text>
+            <Text style={{ fontSize: ms(16), color: '#4B5563', fontWeight: '600' }}>
+              Đúng {result.correctCount}/{gradedCount} câu chấm tự động
+            </Text>
+            {!!result.manualCount && <Text style={{ fontSize: ms(13), color: '#4B5563', marginTop: vs(8) }}>{result.manualCount} câu Viết tự đối chiếu, không tính vào điểm này.</Text>}
+          </View>
+
+          <Text style={{ fontSize: ms(20), color: '#6B7280', fontWeight: '500', marginBottom: vs(4) }}>Kết quả của bạn</Text>
+          <Text style={{ fontSize: ms(18), fontWeight: '800', color: '#111827', marginBottom: vs(16) }}>Đề {examIndex}</Text>
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: hs(12), marginBottom: vs(24) }}>
+            {sections.map(section => (
+              <View key={section.type} style={{ backgroundColor: '#FDF8F6', paddingHorizontal: hs(12), paddingVertical: vs(6), borderRadius: ms(16), borderWidth: 1, borderColor: '#F5E6E1' }}>
+                <Text style={{ fontSize: ms(14), color: '#374151', fontWeight: '700' }}>{section.title}: {section.correct}/{section.questions.filter(q => !q.requiresManualReview).length}</Text>
+              </View>
+            ))}
+          </View>
+          {sections.some(section => section.type === 'WRITING') && (
+            <Text style={{ fontSize: ms(13), color: '#6B7280', marginBottom: vs(16) }}>Điểm phần Viết dựa trên số câu khớp đáp án mẫu. Câu khác đáp án mẫu chưa được chấm theo ý nghĩa.</Text>
+          )}
+
+          <View style={{ flexDirection: 'row', gap: hs(12), marginBottom: vs(12) }}>
+            <TouchableOpacity onPress={onReview} style={{ flex: 2, backgroundColor: '#1E3A8A', borderRadius: ms(8), paddingVertical: vs(12), flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+              <Svg height={ms(16)} viewBox="0 0 24 24" width={ms(16)} style={{ marginRight: hs(8) }}>
+                <Path d="M3 3h18v18H3V3zm16 16V5H5v14h14zM7 7h10v2H7V7zm0 4h10v2H7v-2zm0 4h7v2H7v-2z" fill="#FFFFFF" />
+              </Svg>
+              <Text style={{ color: '#FFFFFF', fontSize: ms(16), fontWeight: '700' }}>Xem lại chi tiết bài làm</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={onRetake} style={{ flex: 1, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: ms(8), paddingVertical: vs(12), flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+              <Svg height={ms(16)} viewBox="0 0 24 24" width={ms(16)} style={{ marginRight: hs(6) }}>
+                <Path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" fill="#4B5563" />
+              </Svg>
+              <Text style={{ color: '#4B5563', fontSize: ms(16), fontWeight: '700' }}>Làm lại</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity onPress={onBack} style={{ backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: ms(8), paddingVertical: vs(12), alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: hs(20) }}>
+            <Text style={{ color: '#4B5563', fontSize: ms(16), fontWeight: '700' }}>Chọn đề khác</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Review Grid Card */}
+        <View style={{ backgroundColor: colors.surface, borderRadius: ms(12), padding: ms(16), borderWidth: 1, borderColor: '#E5E7EB' }}>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: vs(16) }}>
+            <Text style={{ fontSize: ms(20), fontWeight: '800', color: '#111827' }}>Xem lại bài làm</Text>
+            <View style={{ flexDirection: 'row', backgroundColor: '#F3F4F6', borderRadius: ms(20), padding: ms(2) }}>
+              <TouchableOpacity onPress={() => setFilterMode('WRONG')} style={{ backgroundColor: filterMode === 'WRONG' ? '#1E3A8A' : 'transparent', borderRadius: ms(18), paddingHorizontal: hs(12), paddingVertical: vs(4) }}>
+                <Text style={{ color: filterMode === 'WRONG' ? '#FFFFFF' : '#6B7280', fontSize: ms(12), fontWeight: filterMode === 'WRONG' ? '700' : '600' }}>Câu sai ({wrongCount})</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setFilterMode('ALL')} style={{ backgroundColor: filterMode === 'ALL' ? '#1E3A8A' : 'transparent', borderRadius: ms(18), paddingHorizontal: hs(12), paddingVertical: vs(4) }}>
+                <Text style={{ color: filterMode === 'ALL' ? '#FFFFFF' : '#6B7280', fontSize: ms(12), fontWeight: filterMode === 'ALL' ? '700' : '600' }}>Tất cả ({result.totalCount})</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <TouchableOpacity onPress={onReview} style={{ marginBottom: vs(24) }}>
+            <Text style={{ color: '#1E3A8A', fontSize: ms(14), fontWeight: '700' }}>Mở toàn bộ đề ở chế độ xem lại →</Text>
+          </TouchableOpacity>
+
+          {sections.map(section => (
+            <View key={section.type}>
+              <Text style={{ fontSize: ms(16), fontWeight: '700', color: '#111827', marginBottom: vs(12), borderLeftWidth: 3, borderLeftColor: '#1E3A8A', paddingLeft: hs(8) }}>{section.title} <Text style={{ color: '#6B7280', fontWeight: '500' }}>{section.correct}/{section.questions.filter(q => !q.requiresManualReview).length}</Text></Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: ms(8), marginBottom: vs(24) }}>
+                {section.questions.map(q => {
+                  const ans = result.answers[q.id];
+                  const isCorrect = isExamAnswerCorrect(q, ans);
+                  const isUnanswered = !hasExamAnswer(ans);
+                  if (filterMode === 'WRONG' && (isCorrect || q.requiresManualReview)) return null;
+                  const color = q.requiresManualReview ? colors.gray400 : isCorrect ? '#22C55E' : isUnanswered ? '#D1D5DB' : '#EF4444';
+                  const bgColor = q.requiresManualReview ? colors.gray50 : isCorrect ? '#F0FDF4' : isUnanswered ? '#FFFFFF' : '#FEF2F2';
+                  return (
+                    <View key={q.id} style={{ width: ms(40), height: ms(40), borderRadius: ms(8), borderWidth: 1, borderColor: color, backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center' }}>
+                      <Text style={{ color: color === '#D1D5DB' ? '#4B5563' : color, fontWeight: '700', fontSize: ms(16) }}>{q.index}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
+
+          <View style={{ marginTop: vs(8), flexDirection: 'row', flexWrap: 'wrap', gap: hs(12) }}>
+            {!!result.manualCount && <Text style={{ fontSize: ms(14), color: colors.gray400 }}>Xám: tự đối chiếu</Text>}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: hs(4) }}><View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: '#22C55E' }} /><Text style={{ fontSize: ms(14), color: '#4B5563', fontWeight: '500' }}>Đúng</Text></View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: hs(4) }}><View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: '#EF4444' }} /><Text style={{ fontSize: ms(14), color: '#4B5563', fontWeight: '500' }}>Sai</Text></View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: hs(4) }}><View style={{ width: 10, height: 10, borderRadius: 2, borderWidth: 1, borderColor: '#D1D5DB', backgroundColor: '#FFFFFF' }} /><Text style={{ fontSize: ms(14), color: '#4B5563', fontWeight: '500' }}>Chưa trả lời</Text></View>
+          </View>
+
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};

@@ -1,0 +1,497 @@
+// @refresh reset
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useScreenBackHandler } from '@/navigation/useScreenBackHandler';
+import { useTabLeaveGuard } from '@/navigation/tabLeaveGuard';
+import { useIsFocused } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, useWindowDimensions } from 'react-native';
+import { AppAlert } from '@/services/feedback/appAlert';
+import Svg, { Path, Circle } from 'react-native-svg';
+import { UserAvatar } from '@/components/atoms';
+import { ScreenHeader } from '@/components/molecules';
+import { hs, vs, ms, useTheme } from '@/theme';
+import { LeaderboardRow } from './components/LeaderboardRow';
+import { GameMatchCard } from './components/GameMatchCard';
+import { GameMatchingView } from './Matching';
+import { GameBattleView } from './Battle';
+import { AUTH_QUERY_KEYS, useProfile } from '@/services/auth/useAuth';
+import { getTotalExperience, useExperienceLeaderboard } from '@/services/leaderboard';
+import { usePkGame } from '@/services/game/usePkGame';
+import { PK_HISTORY_QUERY_KEYS, usePkHistory } from '@/services/game/pkHistory';
+
+export function GameContent({ navigation, route, targetView: propTargetView }: any) {
+  const { colors } = useTheme();
+  const { height: screenHeight } = useWindowDimensions();
+  const isFocused = useIsFocused();
+  const queryClient = useQueryClient();
+  const [matchAttempt, setMatchAttempt] = useState(0);
+  const leavingDialog = useRef(false);
+
+  // Lấy targetView và timestamp từ route params hoặc props
+  const currentTargetView = route?.params?.targetView || propTargetView;
+  const currentTimestamp = route?.params?.timestamp;
+  const currentKey = currentTargetView ? `${currentTargetView}_${currentTimestamp ?? 0}` : undefined;
+
+  const [lastHandledKey, setLastHandledKey] = useState<string | undefined>(currentKey);
+  const [internalViewState, setInternalViewState] = useState<
+    'main' | 'rules' | 'leaderboard' | 'matching' | 'battle'
+  >(currentTargetView || 'main');
+
+  // Đồng bộ viewState ngay lập tức trong render cycle khi params thay đổi (không bị delay/flicker sang màn main)
+  const { data: profile } = useProfile();
+  const {
+    data: leaderboardData,
+    isPending: leaderboardPending,
+    isError: leaderboardError,
+    refetch: refetchLeaderboard,
+  } = useExperienceLeaderboard();
+  const gameLeaderboardList = leaderboardData?.leaderboard || [];
+  const currentUserItem = gameLeaderboardList.find(item => item.id === profile?.id);
+  const userTotalXp = Math.max(currentUserItem?.totalExp ?? leaderboardData?.myTotalExp ?? 0, getTotalExperience(profile));
+  const userLevel = Math.max(currentUserItem?.level ?? 1, profile?.level ?? 1);
+  const hasRequestedView = Boolean(currentKey && currentKey !== lastHandledKey);
+  const viewState = hasRequestedView ? currentTargetView : internalViewState;
+  useEffect(() => {
+    if (!hasRequestedView) return;
+    setLastHandledKey(currentKey);
+    setInternalViewState(currentTargetView);
+  }, [hasRequestedView, currentKey, currentTargetView]);
+
+  const history = usePkHistory(profile?.id, isFocused && viewState === 'main');
+  const matchHistory = history.data?.pages.flatMap(page => page.data) ?? [];
+
+  const setViewState = useCallback((
+    newView: 'main' | 'rules' | 'leaderboard' | 'matching' | 'battle'
+  ) => {
+    setInternalViewState(newView);
+    if (newView === 'main') {
+      navigation?.setParams?.({ targetView: 'main', timestamp: Date.now() });
+    }
+  }, [navigation]);
+
+  const pk = usePkGame(isFocused && (viewState === 'matching' || viewState === 'battle'), profile?.id, profile?.currentHskLevel || 1, matchAttempt);
+  useEffect(() => {
+    if (!isFocused && (viewState === 'matching' || viewState === 'battle')) setViewState('main');
+  }, [isFocused, viewState, setViewState]);
+  const handleSearch = () => { setMatchAttempt(value => value + 1); setViewState('matching'); };
+
+  const handleBattleComplete = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.profile }),
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] }),
+      queryClient.invalidateQueries({ queryKey: PK_HISTORY_QUERY_KEYS.user(profile?.id) }),
+    ]);
+  };
+
+  // Cập nhật Lịch sử thi đấu và BXH khi hoàn thành trận PK trở về sảnh
+  const handleBattleExit = () => { setViewState('main'); };
+
+  const confirmLeaveBattle = useCallback((proceed: () => void) => {
+    if (leavingDialog.current) return;
+    leavingDialog.current = true;
+    const dismiss = () => { leavingDialog.current = false; };
+    AppAlert.confirm('Rời trận PK', 'Rời trận đang đấu sẽ được tính là đầu hàng.', [
+      { text: 'Tiếp tục đấu', style: 'cancel', onPress: dismiss },
+      { text: 'Rời trận', style: 'destructive', onPress: () => {
+        dismiss(); setViewState('main'); proceed();
+      } },
+    ], { cancelable: true, onDismiss: dismiss });
+  }, [setViewState]);
+  const inBattle = viewState === 'matching' || viewState === 'battle';
+  useTabLeaveGuard(confirmLeaveBattle, inBattle && pk.state.phase === 'playing');
+  useScreenBackHandler(() => {
+    if (inBattle && pk.state.phase === 'playing') confirmLeaveBattle(() => {});
+    else setViewState('main');
+    return true;
+  }, viewState !== 'main');
+
+  // Màn hình Tìm đối thủ (Matching)
+  if ((viewState === 'matching' || viewState === 'battle') && pk.state.phase !== 'playing' && pk.state.phase !== 'finished') {
+    return (
+      <GameMatchingView
+        onCancel={() => setViewState('main')}
+        state={pk.state}
+        onReady={pk.ready}
+      />
+    );
+  }
+
+  // Màn hình Thi đấu PK (Battle)
+  if ((viewState === 'matching' || viewState === 'battle') && (pk.state.phase === 'playing' || pk.state.phase === 'finished')) {
+    return (
+      <GameBattleView
+        onExit={handleBattleExit}
+        onComplete={handleBattleComplete}
+        state={pk.state}
+        onAnswer={pk.answer}
+        onPlayAgain={handleSearch}
+      />
+    );
+  }
+
+  // Màn hình Luật chơi
+  if (viewState === 'rules') {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F5F7FA' }}>
+        <ScrollView contentContainerStyle={{ padding: ms(16) }} showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: vs(24) }}>
+            <TouchableOpacity
+              onPress={() => {
+                setViewState('main');
+                navigation?.setParams?.({ targetView: 'main' });
+              }}
+              style={{ width: hs(45), height: vs(45), alignItems: 'center', justifyContent: 'center', marginLeft: hs(-12), marginRight: hs(4) }}
+            >
+              <Svg height="28" viewBox="0 0 24 24" width="28" fill="none">
+                <Path d="M19 12H5M12 19l-7-7 7-7" stroke="#0E84F2" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
+            </TouchableOpacity>
+            <Text style={{ fontSize: ms(18), fontWeight: '700', color: '#111827' }}>Thông tin luật chơi</Text>
+          </View>
+
+          {/* Box 1: Chế độ thi đấu */}
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: ms(16), padding: ms(20), marginBottom: vs(20), elevation: 1, shadowColor: '#000', shadowOffset: { width: hs(0), height: vs(1) }, shadowOpacity: 0.05, shadowRadius: 3 }}>
+            <Text style={{ fontSize: ms(16), fontWeight: '800', color: '#111827', marginBottom: vs(16) }}>
+              Chế độ thi đấu
+            </Text>
+
+            {/* Rule 1 */}
+            <View style={{ borderColor: '#F0F2F5', borderWidth: 1, borderRadius: ms(12), padding: ms(14), marginBottom: vs(12) }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: vs(6) }}>
+                <View style={{ backgroundColor: '#F3E8FF', borderRadius: ms(8), height: vs(28), width: hs(28), alignItems: 'center', justifyContent: 'center', marginRight: hs(10) }}>
+                  <Svg height="14" viewBox="0 0 24 24" width="14">
+                    <Path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" fill="#9333EA" />
+                  </Svg>
+                </View>
+                <Text style={{ fontSize: ms(16), fontWeight: '700', color: '#111827' }}>Tối đa 10 câu mỗi trận</Text>
+              </View>
+              <Text style={{ fontSize: ms(14), color: '#4B5563', lineHeight: ms(20) }}>Hai người luân phiên trả lời bộ câu hỏi chung từ máy chủ.</Text>
+            </View>
+
+            {/* Rule 2 */}
+            <View style={{ borderColor: '#F0F2F5', borderWidth: 1, borderRadius: ms(12), padding: ms(14), marginBottom: vs(12) }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: vs(6) }}>
+                <View style={{ backgroundColor: '#FEF3C7', borderRadius: ms(8), height: vs(28), width: hs(28), alignItems: 'center', justifyContent: 'center', marginRight: hs(10) }}>
+                  <Svg height="14" viewBox="0 0 24 24" width="14">
+                    <Path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="#D97706" />
+                  </Svg>
+                </View>
+                <Text style={{ fontSize: ms(16), fontWeight: '700', color: '#111827' }}>10 giây mỗi lượt</Text>
+              </View>
+              <Text style={{ fontSize: ms(14), color: '#4B5563', lineHeight: ms(20) }}>Hết giờ mà chưa bấm là mất câu đó, lượt chuyển sang đối thủ.</Text>
+            </View>
+
+            {/* Rule 3 */}
+            <View style={{ borderColor: '#F0F2F5', borderWidth: 1, borderRadius: ms(12), padding: ms(14), marginBottom: vs(12) }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: vs(6) }}>
+                <View style={{ backgroundColor: '#D1FAE5', borderRadius: ms(8), height: vs(28), width: hs(28), alignItems: 'center', justifyContent: 'center', marginRight: hs(10) }}>
+                  <Svg height="14" viewBox="0 0 24 24" width="14">
+                    <Path d="M7 2v11h3v9l7-12h-4l4-8z" fill="#059669" />
+                  </Svg>
+                </View>
+                <Text style={{ fontSize: ms(16), fontWeight: '700', color: '#111827' }}>Nhanh và đúng ăn nhiều điểm</Text>
+              </View>
+              <Text style={{ fontSize: ms(14), color: '#4B5563', lineHeight: ms(20) }}>100 điểm nền, cộng tối đa 50 theo tốc độ; đúng liên tiếp lên hệ số tới x3.</Text>
+            </View>
+
+            {/* Rule 4 */}
+            <View style={{ borderColor: '#F0F2F5', borderWidth: 1, borderRadius: ms(12), padding: ms(14) }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: vs(6) }}>
+                <View style={{ backgroundColor: '#FFE4E6', borderRadius: ms(8), height: vs(28), width: hs(28), alignItems: 'center', justifyContent: 'center', marginRight: hs(10) }}>
+                  <Svg height="14" viewBox="0 0 24 24" width="14">
+                    <Path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.11-1.36-3.11-2.92v-1.46h2.67v1.25c0 .6.67 1.05 1.78 1.05 1.25 0 1.78-.4 1.78-.96 0-1.46-5.11-1.11-5.11-4.04 0-1.6 1.25-2.62 2.98-2.98V6h2.67v1.98c1.51.31 2.8 1.2 2.8 2.62v1.38h-2.67v-1.11c0-.49-.53-.89-1.51-.89-1.33 0-1.78.49-1.78.98 0 1.46 5.11 1.07 5.11 4.13 0 1.55-1.25 2.62-2.94 3z" fill="#E11D48" />
+                  </Svg>
+                </View>
+                <Text style={{ fontSize: ms(16), fontWeight: '700', color: '#111827' }}>Kết quả từ máy chủ</Text>
+              </View>
+              <Text style={{ fontSize: ms(14), color: '#4B5563', lineHeight: ms(20) }}>Trận hoàn tất: thắng +30 EXP, hòa +15 EXP, thua +5 EXP khi có trả lời hợp lệ. Trận bỏ dở không có EXP.</Text>
+            </View>
+          </View>
+
+          {/* Box 2: Thông tin chi tiết */}
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: ms(16), padding: ms(20), marginBottom: vs(20), elevation: 1, shadowColor: '#000', shadowOffset: { width: hs(0), height: vs(1) }, shadowOpacity: 0.05, shadowRadius: 3 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: vs(16) }}>
+              <Svg height="24" viewBox="0 0 24 24" width="24" style={{ marginRight: hs(8) }}>
+                <Path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="#8B5CF6" />
+              </Svg>
+              <Text style={{ fontSize: ms(16), fontWeight: '800', color: '#111827', flex: 1 }}>Đấu trường PK tiếng Trung hoạt động thế nào?</Text>
+            </View>
+            <Text style={{ fontSize: ms(14), color: '#4B5563', lineHeight: ms(24), marginBottom: vs(12) }}>Hai người cùng trình độ HSK được ghép trực tiếp và luân phiên trả lời 10 câu từ máy chủ, mỗi người 5 câu. Mỗi lượt có 10 giây; điểm và kết quả được máy chủ xác nhận.</Text>
+            <Text style={{ fontSize: ms(14), color: '#4B5563', lineHeight: ms(24) }}>Mỗi trận hoàn tất đủ điều kiện đều được cộng EXP, không giới hạn số trận có thưởng trong ngày. Hãy trả lời hợp lệ ít nhất một câu và chơi đến hết trận để nhận EXP.</Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // Màn hình Bảng xếp hạng
+  if (viewState === 'leaderboard') {
+
+
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+        <View style={{ padding: ms(16), flex: 1, paddingBottom: vs(24) }}>
+          {/* Header */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: vs(24) }}>
+            <TouchableOpacity
+              onPress={() => {
+                setViewState('main');
+                navigation?.setParams?.({ targetView: 'main' });
+              }}
+              style={{ width: hs(45), height: vs(45), alignItems: 'center', justifyContent: 'center', marginLeft: hs(-12), marginRight: hs(4) }}
+            >
+              <Svg height="28" viewBox="0 0 24 24" width="28" fill="none">
+                <Path d="M19 12H5M12 19l-7-7 7-7" stroke="#0E84F2" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
+            </TouchableOpacity>
+            <Text style={{ fontSize: ms(28), fontWeight: '900', color: '#111827' }}>Game PK (1 vs 1)</Text>
+          </View>
+
+          <Text style={{ fontSize: ms(20), fontWeight: '800', color: '#111827', textAlign: 'center', marginBottom: vs(16) }}>
+            {leaderboardData && !leaderboardData.hasAuthoritativeRanks && !leaderboardData.isComplete ? 'DANH SÁCH EXP ĐÃ TẢI' : 'BẢNG XẾP HẠNG NGƯỜI CHƠI'}
+          </Text>
+
+          {/* Bảng xếp hạng (Box) */}
+          <View style={{ backgroundColor: '#FAFAFA', borderRadius: ms(12), borderWidth: 1, borderColor: '#F0F2F5', overflow: 'hidden', flex: 1 }}>
+            <ScrollView contentContainerStyle={{ paddingHorizontal: hs(16), paddingVertical: vs(16), rowGap: vs(16) }} showsVerticalScrollIndicator={false}>
+              {gameLeaderboardList.length > 0 ? (
+                gameLeaderboardList.map((item, idx) => (
+                  <LeaderboardRow
+                    key={item.id || idx}
+                    rank={item.rank}
+                    name={item.fullName || item.email || `Học viên #${item.id}`}
+                    level={item.level || 1}
+                    totalExp={item.totalExp}
+                    photoUrl={item.photo?.path}
+                    bg={item.rank === 1 ? '#F5A623' : item.rank === 2 ? '#D6B4E6' : item.rank === 3 ? '#FF7043' : '#F0F2F5'}
+                    color={item.rank !== null && item.rank <= 3 ? '#FFFFFF' : '#4B5563'}
+                  />
+                ))
+              ) : (
+                <Text
+                  onPress={leaderboardError ? () => { void refetchLeaderboard(); } : undefined}
+                  style={{ textAlign: 'center', color: '#9E9E9E', marginTop: vs(20) }}
+                >
+                  {leaderboardPending
+                    ? 'Đang tải bảng xếp hạng...'
+                    : leaderboardError
+                      ? 'Không thể tải bảng xếp hạng. Chạm để thử lại.'
+                      : 'Chưa có dữ liệu bảng xếp hạng'}
+                </Text>
+              )}
+            </ScrollView>
+          </View>
+
+          {/* Current User Row */}
+          <View style={{ alignItems: 'center', backgroundColor: '#FFF5F5', borderRadius: ms(999), flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: hs(16), paddingVertical: vs(12), marginTop: vs(24), alignSelf: 'center', width: '90%' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <UserAvatar photoUrl={profile?.photo?.path} size={ms(32)} backgroundColor="#3730A3" style={{ marginRight: hs(10) }} />
+              <View>
+                <Text style={{ color: '#111827', fontSize: ms(16), fontWeight: '800' }}>{profile?.fullName || profile?.username || 'Người chơi'} <Text style={{ color: '#E53935' }}>(Bạn)</Text></Text>
+                <Text style={{ color: '#9E9E9E', fontSize: ms(14), marginTop: vs(1), fontWeight: '500' }}>Level {userLevel}</Text>
+              </View>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={{ color: '#4B5563', fontSize: ms(14), fontWeight: '700' }}>{userTotalXp.toLocaleString('vi-VN')} EXP</Text>
+            </View>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Màn hình chính Game PK
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: hs(16), paddingBottom: ms(16), paddingTop: vs(16) }} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <ScreenHeader variant="page" title="Game PK (1 vs 1)" style={{ paddingHorizontal: 0, paddingTop: 0, paddingBottom: 0, marginBottom: screenHeight > 750 ? vs(28) : vs(20) }} />
+
+        {/* Cụm Bắt đầu tìm người */}
+        <GameMatchCard onSearch={handleSearch} />
+
+        {/* Nút Luật chơi */}
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setViewState('rules')}
+          style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'center', marginBottom: screenHeight > 750 ? 40 : 28 }}
+        >
+          <Svg height="16" viewBox="0 0 24 24" width="16" style={{ marginRight: hs(6) }}>
+            <Circle cx="12" cy="12" r="10" fill="none" stroke="#000000" strokeWidth={2} />
+            <Path d="M12 16v-4M12 8h.01" stroke="#000000" strokeWidth={2} strokeLinecap="round" />
+          </Svg>
+          <Text style={{ color: '#000000', fontSize: ms(14), fontWeight: '500' }}>
+            Thông tin luật chơi của game
+          </Text>
+        </TouchableOpacity>
+
+        {/* Lịch sử thi đấu & Xem bảng xếp hạng */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: vs(12) }}>
+          <Text style={{ fontSize: ms(20), fontWeight: '800', color: '#000000' }}>Lịch sử thi đấu</Text>
+          <TouchableOpacity onPress={() => setViewState('leaderboard')}>
+            <Text style={{ fontSize: ms(15), fontWeight: '700', color: '#1F4086' }}>Xem bảng xếp hạng &gt;</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Bảng Lịch sử thi đấu chuẩn Figma */}
+        <View
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderColor: '#E5E7EB',
+            borderWidth: 1.5,
+            borderRadius: ms(16),
+            overflow: 'hidden',
+            minHeight: vs(160),
+            marginBottom: vs(16),
+          }}
+        >
+          {/* Table Header */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: hs(16),
+              paddingVertical: vs(12),
+              borderBottomWidth: 1,
+              borderBottomColor: '#F3F4F6',
+              backgroundColor: '#FAFAFA',
+            }}
+          >
+            <Text style={{ fontSize: ms(14), fontWeight: '800', color: '#111827', width: hs(85) }}>
+              Trận
+            </Text>
+            <Text style={{ fontSize: ms(14), fontWeight: '800', color: '#111827', flex: 1, textAlign: 'center' }}>
+              Số câu đúng
+            </Text>
+            <Text style={{ fontSize: ms(14), fontWeight: '800', color: '#111827', width: hs(80), textAlign: 'right' }}>
+              Số điểm
+            </Text>
+          </View>
+
+          {/* Danh sách các trận đã đấu */}
+          {matchHistory.length === 0 ? (
+            <View style={{ padding: ms(32), alignItems: 'center', justifyContent: 'center' }}>
+              <Text
+                onPress={history.isError ? () => { void history.refetch(); } : undefined}
+                style={{ color: colors.text, fontSize: ms(14), fontWeight: '500', textAlign: 'center' }}
+              >
+                {history.isPending
+                  ? 'Đang tải lịch sử thi đấu...'
+                  : history.isError
+                    ? 'Không thể tải lịch sử. Chạm để thử lại.'
+                    : 'Hãy bắt đầu chơi ngay nào!'}
+              </Text>
+            </View>
+          ) : (
+            matchHistory.map((item, idx) => (
+              <View
+                key={item.id}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: hs(16),
+                  paddingVertical: vs(12),
+                  borderBottomWidth: idx < matchHistory.length - 1 ? 1 : 0,
+                  borderBottomColor: '#F3F4F6',
+                }}
+              >
+                {/* Cột Trận */}
+                <View style={{ width: hs(85) }}>
+                  <Text style={{ fontSize: ms(14), fontWeight: '700', color: '#111827' }}>
+                    Trận {item.matchIndex}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: ms(11),
+                      fontWeight: '700',
+                      color: item.isWin ? colors.success : item.isDraw ? colors.text : colors.red500,
+                    }}
+                  >
+                    {item.isWin ? 'Thắng' : item.isDraw ? 'Hòa' : 'Thua'}
+                  </Text>
+                </View>
+
+                {/* Cột Số câu đúng */}
+                <Text
+                  style={{
+                    fontSize: ms(15),
+                    fontWeight: '800',
+                    color: '#111827',
+                    flex: 1,
+                    textAlign: 'center',
+                  }}
+                >
+                  {item.correctCount}/{item.totalQuestions}
+                </Text>
+
+                {/* Cột Số điểm */}
+                <Text
+                  style={{
+                    fontSize: ms(16),
+                    fontWeight: '900',
+                    color: '#1E40AF',
+                    width: hs(80),
+                    textAlign: 'right',
+                  }}
+                >
+                  {item.score}
+                </Text>
+              </View>
+            ))
+          )}
+          {matchHistory.length > 0 && history.hasNextPage ? (
+            <TouchableOpacity
+              accessibilityRole="button"
+              disabled={history.isFetchingNextPage}
+              onPress={() => { void history.fetchNextPage(); }}
+              style={{ minHeight: ms(44), padding: ms(12), alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Text style={{ color: colors.primary, fontSize: ms(14), fontWeight: '600', textAlign: 'center' }}>
+                {history.isFetchingNextPage
+                  ? 'Đang tải thêm...'
+                  : history.isFetchNextPageError
+                    ? 'Chưa tải thêm được. Chạm để thử lại.'
+                    : 'Xem thêm lịch sử'}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        {/* Current User Row dưới đáy màn hình chính chuẩn Figma */}
+        <View
+          style={{
+            alignItems: 'center',
+            backgroundColor: '#FFF5F5',
+            borderRadius: ms(999),
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            paddingHorizontal: hs(16),
+            paddingVertical: vs(12),
+            marginTop: vs(12),
+            marginBottom: vs(24),
+            alignSelf: 'center',
+            width: '100%',
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <UserAvatar photoUrl={profile?.photo?.path} size={ms(36)} backgroundColor="#3730A3" style={{ marginRight: hs(10) }} />
+            <View>
+              <Text style={{ color: '#111827', fontSize: ms(15), fontWeight: '800' }}>
+                {profile?.fullName || profile?.username || 'Người chơi'} <Text style={{ color: '#E53935' }}>(Bạn)</Text>
+              </Text>
+              <Text style={{ color: '#9E9E9E', fontSize: ms(13), marginTop: vs(1), fontWeight: '500' }}>
+                Level {userLevel}
+              </Text>
+            </View>
+          </View>
+          <Text style={{ color: '#111827', fontSize: ms(16), fontWeight: '800' }}>
+            {userTotalXp.toLocaleString('vi-VN')} EXP
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+export default GameContent;
