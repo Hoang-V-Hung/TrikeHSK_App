@@ -9,7 +9,7 @@ const resolveApiBaseUrl = (): string => {
   const envUrl = process.env.API_URL;
   const fallback = Platform.OS === 'android'
     ? 'http://10.0.2.2:3001/api/v1'
-    : 'http://localhost:3001/api/v1';
+    : 'https://api.tricehsk.id.vn/api/v1';
   let api: URL;
   try {
     api = new URL(envUrl?.trim() || fallback);
