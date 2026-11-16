@@ -110,7 +110,7 @@ export const HskExamResultView = ({ result, onBack, onReview, onRetake }: Props)
           </View>
 
           <TouchableOpacity onPress={onReview} style={{ marginBottom: vs(24) }}>
-            <Text style={{ color: '#1E3A8A', fontSize: ms(14), fontWeight: '700' }}>Mở toàn bộ đề ở chế độ xem lại →</Text>
+            <Text style={{ color: '#1E3A8A', fontSize: ms(14), fontWeight: '700' }}>Mở toàn bộ đề ở chế độ xem lại </Text>
           </TouchableOpacity>
 
           {sections.map(section => (
