@@ -20,7 +20,8 @@ const ForgotPassword = ({ navigation }: RootScreenProps<Paths.ForgotPassword>) =
   const isLoading = forgotPasswordMutation.isPending;
 
   const handleSendLink = async () => {
-    const trimmedEmail = email.trim();
+    if (isLoading) return;
+    const trimmedEmail = email.trim().toLowerCase();
     const emailError = validateEmail(trimmedEmail);
     setErrors({ email: emailError });
     if (emailError) return;
@@ -33,7 +34,7 @@ const ForgotPassword = ({ navigation }: RootScreenProps<Paths.ForgotPassword>) =
         [
           {
             text: 'Về trang đăng nhập',
-            onPress: () => navigation.navigate(Paths.Login),
+            onPress: () => navigation.reset({ index: 0, routes: [{ name: Paths.Login }] }),
           },
           {
             text: 'Ở lại',
@@ -86,7 +87,7 @@ const ForgotPassword = ({ navigation }: RootScreenProps<Paths.ForgotPassword>) =
 
           <TouchableOpacity
             style={{ marginTop: 24, alignItems: 'center' }}
-            onPress={() => navigation.goBack()}
+            onPress={() => navigation.reset({ index: 0, routes: [{ name: Paths.Login }] })}
           >
             <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '600' }}>
               Quay lại đăng nhập

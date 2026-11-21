@@ -1,5 +1,5 @@
 // @refresh reset
-import { NavigationContainer, createNavigationContainerRef, getStateFromPath } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -12,47 +12,12 @@ import { useTheme } from '@/theme';
 import { Example, Login, Onboarding, Register, Startup, Survey, ForgotPassword, ResetPassword } from '@/screens';
 import { BottomTabNavigator } from '@/navigation/BottomTabNavigator';
 import { getAuthSessionVersion, isAuthenticated, subscribeAuthSession } from '@/services/storage';
-import { API_ORIGIN } from '@/services/config';
 import { AudioProvider } from '@/services/audio/AudioProvider';
 import { useReducedMotion } from './useReducedMotion';
+import { linking } from './linking';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
-
-const linking = {
-  prefixes: [
-    'tricehsk://',
-    'apphsk://',
-    API_ORIGIN,
-  ],
-  config: {
-    screens: {
-      [Paths.ResetPassword]: 'password-change',
-      [Paths.Login]: 'login',
-    },
-  },
-  getStateFromPath: (path: string, options: any) => {
-    if (path.includes('reset-password') || path.includes('password-change')) {
-      const queryString = path.includes('?') ? path.split('?')[1] : '';
-      const params: Record<string, string> = {};
-      if (queryString) {
-        const searchParams = new URLSearchParams(queryString);
-        searchParams.forEach((value, key) => {
-          params[key] = value;
-        });
-      }
-      return {
-        routes: [
-          {
-            name: Paths.ResetPassword,
-            params,
-          },
-        ],
-      };
-    }
-    return getStateFromPath(path, options);
-  },
-};
 
 function ApplicationNavigator() {
   const { navigationTheme, colors } = useTheme();

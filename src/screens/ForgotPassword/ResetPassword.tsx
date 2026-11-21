@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { AppAlert } from '@/services/feedback/appAlert';
 import { SafeScreen } from '@/components/templates';
@@ -14,7 +14,8 @@ import type { FormErrors } from '@/services/auth/formErrors';
 
 const ResetPassword = ({ route, navigation }: RootScreenProps<Paths.ResetPassword>) => {
   const { fonts, layout } = useTheme();
-  const hash = route?.params?.hash;
+  const routeHash = route?.params?.hash;
+  const hash = typeof routeHash === 'string' && routeHash.length > 0 && routeHash.length <= 4096 ? routeHash : undefined;
   const email = route?.params?.email;
 
   const [password, setPassword] = useState('');
@@ -23,7 +24,14 @@ const ResetPassword = ({ route, navigation }: RootScreenProps<Paths.ResetPasswor
   const resetPasswordMutation = useResetPassword();
   const isLoading = resetPasswordMutation.isPending;
 
+  useEffect(() => {
+    setPassword('');
+    setConfirmPassword('');
+    setErrors({});
+  }, [hash]);
+
   const handleReset = async () => {
+    if (isLoading) return;
     if (!hash) {
       AppAlert.error(
         'Lỗi',
@@ -38,12 +46,9 @@ const ResetPassword = ({ route, navigation }: RootScreenProps<Paths.ResetPasswor
       return;
     }
 
-    const trimmedPassword = password.trim();
-    const trimmedConfirm = confirmPassword.trim();
-
     const nextErrors: FormErrors = {
-      password: !trimmedPassword ? 'Vui lòng nhập mật khẩu mới.' : trimmedPassword.length < 6 ? 'Mật khẩu phải có ít nhất 6 ký tự.' : undefined,
-      confirmPassword: !trimmedConfirm ? 'Vui lòng xác nhận mật khẩu mới.' : trimmedPassword !== trimmedConfirm ? 'Mật khẩu xác nhận không khớp.' : undefined,
+      password: !password ? 'Vui lòng nhập mật khẩu mới.' : password.length < 6 ? 'Mật khẩu phải có ít nhất 6 ký tự.' : password.length > 72 ? 'Mật khẩu tối đa 72 ký tự.' : undefined,
+      confirmPassword: !confirmPassword ? 'Vui lòng xác nhận mật khẩu mới.' : password !== confirmPassword ? 'Mật khẩu xác nhận không khớp.' : undefined,
     };
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
@@ -51,14 +56,14 @@ const ResetPassword = ({ route, navigation }: RootScreenProps<Paths.ResetPasswor
     try {
       await resetPasswordMutation.mutateAsync({
         hash,
-        password: trimmedPassword,
+        password,
       });
       
       AppAlert.success(
         'Đổi mật khẩu thành công',
         'Mật khẩu của bạn đã được cập nhật thành công! Vui lòng đăng nhập với mật khẩu mới.',
         [
-          { text: 'Đăng nhập ngay', onPress: () => navigation.navigate(Paths.Login) }
+          { text: 'Đăng nhập ngay', onPress: () => navigation.reset({ index: 0, routes: [{ name: Paths.Login }] }) }
         ]
       );
     } catch (error) {
@@ -79,7 +84,7 @@ const ResetPassword = ({ route, navigation }: RootScreenProps<Paths.ResetPasswor
               Khôi phục mật khẩu
             </Text>
             <Text style={{ fontSize: 14, color: '#6B7280', lineHeight: 20 }}>
-              {email ? (
+              {!hash ? 'Liên kết thiếu mã đặt lại mật khẩu. Vui lòng yêu cầu một liên kết mới.' : email ? (
                 <>
                   Tài khoản: <Text style={{ fontWeight: 'bold' }}>{email}</Text>. Vui lòng nhập mật khẩu mới bên dưới.
                 </>
@@ -96,6 +101,7 @@ const ResetPassword = ({ route, navigation }: RootScreenProps<Paths.ResetPasswor
               onChangeText={value => { setPassword(value); setErrors(current => ({ ...current, password: undefined, confirmPassword: undefined, form: undefined })); }}
               placeholder="Mật khẩu mới (tối thiểu 6 ký tự)"
               secureTextEntry
+              maxLength={72}
               value={password}
               containerStyle={{ marginBottom: 16 }}
             />
@@ -105,6 +111,7 @@ const ResetPassword = ({ route, navigation }: RootScreenProps<Paths.ResetPasswor
               onChangeText={value => { setConfirmPassword(value); setErrors(current => ({ ...current, confirmPassword: undefined, form: undefined })); }}
               placeholder="Xác nhận mật khẩu mới"
               secureTextEntry
+              maxLength={72}
               value={confirmPassword}
             />
             <InputError message={errors.form} />
@@ -113,17 +120,17 @@ const ResetPassword = ({ route, navigation }: RootScreenProps<Paths.ResetPasswor
           <Button
             fullWidth
             loading={isLoading}
-            onPress={handleReset}
-            title="Đổi mật khẩu"
+            onPress={hash ? handleReset : () => navigation.replace(Paths.ForgotPassword)}
+            title={hash ? 'Đổi mật khẩu' : 'Yêu cầu liên kết mới'}
             variant="primary"
           />
 
           <TouchableOpacity
             style={{ marginTop: 24, alignItems: 'center' }}
-            onPress={() => navigation.goBack()}
+            onPress={() => navigation.reset({ index: 0, routes: [{ name: Paths.Login }] })}
           >
             <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '600' }}>
-              Quay lại
+              Quay lại đăng nhập
             </Text>
           </TouchableOpacity>
         </ScrollView>

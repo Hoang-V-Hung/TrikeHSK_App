@@ -33,14 +33,13 @@ function Login({ navigation }: RootScreenProps<Paths.Login>) {
 
   const handleLogin = () => {
     const trimmedEmail = email.trim();
-    const trimmedPassword = password.trim();
 
-    const nextErrors: FormErrors = { email: validateEmail(trimmedEmail), password: !trimmedPassword ? 'Vui lòng nhập mật khẩu.' : undefined };
+    const nextErrors: FormErrors = { email: validateEmail(trimmedEmail), password: !password ? 'Vui lòng nhập mật khẩu.' : undefined };
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
 
     loginMutation.mutate(
-      { email: trimmedEmail, password: trimmedPassword },
+      { email: trimmedEmail, password },
       {
         onSuccess: ({ user }) => {
           navigation.reset({
