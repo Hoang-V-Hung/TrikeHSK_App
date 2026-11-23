@@ -1,7 +1,8 @@
 import type { ImageSourcePropType } from 'react-native';
 import { API_BASE_URL, API_ORIGIN } from './config';
+import { localMedia } from './offline/store';
 
-export const resolveMediaUrl = (value?: string | null): string | undefined => {
+export const remoteMediaUrl = (value?: string | null): string | undefined => {
   if (!value?.trim()) return undefined;
   const normalized = value.trim().replace(/\\/g, '/');
   if (/^https?:/i.test(normalized)) {
@@ -22,6 +23,11 @@ export const resolveMediaUrl = (value?: string | null): string | undefined => {
     return `${new URL(API_ORIGIN).protocol}${normalized}`;
   if (normalized.startsWith('/')) return `${API_ORIGIN}${normalized}`;
   return `${API_BASE_URL}/${normalized.replace(/^\/+/, '')}`;
+};
+
+export const resolveMediaUrl = (value?: string | null): string | undefined => {
+  const url = remoteMediaUrl(value);
+  return url ? localMedia(url) || url : undefined;
 };
 
 export const imageSource = (

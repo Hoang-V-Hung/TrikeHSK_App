@@ -1,4 +1,6 @@
+import { useOfflineLesson } from '@/services/offline/useOffline';
 // @refresh reset
+import { readLearningDraft, clearLearningDraft, useLearningDraft } from '@/services/offline/drafts';
 import { PracticeHeader } from '../../components/PracticeHeader';
 import { QuestionAudioPlayer } from '../../components/QuestionAudioPlayer';
 import { PracticeBookmarkButton } from '../../components/PracticeBookmarkButton';
@@ -182,7 +184,10 @@ import { transformQuestionToListening } from '@/services/education/transformers'
 
 export const ListeningPracticeView = ({ hskLevel, practiceSetId, onBack, onSubmit }: Props) => {
   const [questions, setQuestions] = useState<ListeningPracticeQuestion[]>([]);
+  useOfflineLesson(questions);
   const [isLoading, setIsLoading] = useState(true);
+  const [sourceVersion, setSourceVersion] = useState('');
+  const draftKey = `listening:${practiceSetId}`;
 
   useEffect(() => {
     let cancelled = false;
@@ -199,7 +204,11 @@ export const ListeningPracticeView = ({ hskLevel, practiceSetId, onBack, onSubmi
         }
         const mappedQuestions = links.map(({ question }, idx) =>
           transformQuestionToListening(question, idx + 1, set.audioUrl));
-        if (!cancelled) { setQuestions(mappedQuestions); setAnswers({}); setBookmarks({}); }
+        if (!cancelled) {
+          const version = JSON.stringify([set.updatedAt, mappedQuestions.map(question => question.id)]);
+          const draft = readLearningDraft(draftKey, version);
+          setSourceVersion(version); setQuestions(mappedQuestions); setAnswers(draft.answers || {}); setBookmarks(draft.bookmarks || {});
+        }
       } catch (err) {
         if (!cancelled) { setQuestions([]); AppAlert.error('Không thể tải bài luyện', 'Vui lòng kiểm tra kết nối và mở lại bài luyện.'); }
       } finally {
@@ -217,6 +226,7 @@ export const ListeningPracticeView = ({ hskLevel, practiceSetId, onBack, onSubmi
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [bookmarks, setBookmarks] = useState<Record<string, boolean>>({});
+  useLearningDraft(draftKey, !isLoading && questions.length > 0, { answers, bookmarks, sourceVersion });
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showGridModal, setShowGridModal] = useState(false);
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
@@ -253,6 +263,7 @@ export const ListeningPracticeView = ({ hskLevel, practiceSetId, onBack, onSubmi
     });
     if (onSubmit) {
       onSubmit({ score: gradableQuestions.length ? Math.round((correct / gradableQuestions.length) * 100) : null, correctCount: correct, totalCount: questions.length, gradedCount: gradableQuestions.length, manualCount: questions.length - gradableQuestions.length, completedCount: Object.keys(answers).length, answers, questions, durationInSeconds: studyTimer.takeSeconds() });
+      clearLearningDraft(draftKey);
     } else {
       onBack();
     }

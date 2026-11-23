@@ -9,13 +9,16 @@ import { ThemeProvider } from '@/theme';
 import '@/translations';
 import { useSyncStudyEvents } from '@/services/analytics/useAnalytics';
 import AppAlertHost from '@/components/organisms/AppAlertHost';
+import { useOfflineRuntime } from '@/services/offline/useOffline';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     mutations: {
+      networkMode: 'always',
       retry: false,
     },
     queries: {
+      networkMode: 'always',
       retry: false,
     },
   },
@@ -25,6 +28,7 @@ export const storage = createMMKV();
 
 function App() {
   useSyncStudyEvents(queryClient);
+  useOfflineRuntime(queryClient);
   return (
     <GestureHandlerRootView>
       <QueryClientProvider client={queryClient}>

@@ -1,4 +1,6 @@
+import { useOfflineLesson } from '@/services/offline/useOffline';
 // @refresh reset
+import { readLearningDraft, clearLearningDraft, useLearningDraft } from '@/services/offline/drafts';
 import { PracticeBookmarkButton } from '../../components/PracticeBookmarkButton';
 import { PracticeHeader } from '../../components/PracticeHeader';
 import { useStudyTimer } from '@/hooks/useStudyTimer';
@@ -325,7 +327,10 @@ import { transformQuestionToReading } from '@/services/education/transformers';
 
 const ReadingPracticeSession = ({ hskLevel, practiceSetId, onBack, onSubmit }: Props) => {
   const [questions, setQuestions] = useState<ReadingPracticeQuestion[]>([]);
+  useOfflineLesson(questions);
   const [isLoading, setIsLoading] = useState(true);
+  const [sourceVersion, setSourceVersion] = useState('');
+  const draftKey = `reading:${practiceSetId}`;
   const sections = useMemo(() => buildReadingSections(questions), [questions]);
   const { height: windowHeight } = useWindowDimensions();
   const maxPinnedImageHeight = Math.min(vs(220), windowHeight * 0.28);
@@ -343,7 +348,11 @@ const ReadingPracticeSession = ({ hskLevel, practiceSetId, onBack, onSubmit }: P
           .sort((left, right) => left.order - right.order)
           .filter(link => link.question)
           .map(({ question }, idx) => transformQuestionToReading(question, idx + 1));
-        if (!cancelled) { setQuestions(mappedQuestions); setAnswers({}); setBookmarks({}); setCurrentIndex(0); }
+        if (!cancelled) {
+          const version = JSON.stringify([set.updatedAt, mappedQuestions.map(question => question.id)]);
+          const draft = readLearningDraft(draftKey, version);
+          setSourceVersion(version); setQuestions(mappedQuestions); setAnswers(draft.answers || {}); setBookmarks(draft.bookmarks || {}); setCurrentIndex(Math.min(mappedQuestions.length - 1, draft.currentIndex || 0));
+        }
       } catch (err) {
         if (!cancelled) { setQuestions([]); AppAlert.error('Không thể tải bài luyện', 'Vui lòng kiểm tra kết nối và mở lại bài luyện.'); }
       } finally {
@@ -360,6 +369,7 @@ const ReadingPracticeSession = ({ hskLevel, practiceSetId, onBack, onSubmit }: P
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showGridModal, setShowGridModal] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  useLearningDraft(draftKey, !isLoading && questions.length > 0, { answers, bookmarks, currentIndex, sourceVersion });
   const sectionListRef = useRef<SectionList<ReadingPracticeQuestion, ReadingQuestionSection>>(null);
   const pendingScroll = useRef<{ sectionIndex: number; itemIndex: number } | null>(null);
   const scrollRetryCount = useRef(0);
@@ -401,6 +411,7 @@ const ReadingPracticeSession = ({ hskLevel, practiceSetId, onBack, onSubmit }: P
     });
     if (onSubmit) {
       onSubmit({ score: gradableQuestions.length ? Math.round((correct / gradableQuestions.length) * 100) : 0, correctCount: correct, totalCount: questions.length, answers, questions, durationInSeconds: studyTimer.takeSeconds() });
+      clearLearningDraft(draftKey);
     } else {
       onBack();
     }

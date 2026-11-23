@@ -183,6 +183,7 @@ export function ProfileContent({ onLogout }: { onLogout?: () => void }) {
         />
       </View>
 
+
       {/* ================= CARD 2: HIỂN THỊ KHI HỌC ================= */}
       <View style={{ paddingHorizontal: hs(16), marginBottom: vs(16) }}>
         <DisplaySettingsCard

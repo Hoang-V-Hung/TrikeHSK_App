@@ -12,7 +12,6 @@ import { AppState } from 'react-native';
 import { AppAlert } from '@/services/feedback/appAlert';
 import { useFocusEffect } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
-import { API_ORIGIN } from '../config';
 import { resolveMediaUrl } from '../media';
 import { subscribeAuthSession } from '../storage';
 
@@ -83,7 +82,7 @@ window.audioCommand = function(command) {
 };
 </script></body></html>`;
 
-const playerSource = { html: AUDIO_DOCUMENT, baseUrl: API_ORIGIN };
+const playerSource = { html: AUDIO_DOCUMENT, baseUrl: 'file:///' };
 
 const AudioContext = createContext<{
   state: AudioState;
@@ -97,7 +96,8 @@ export function AudioProvider({ children }: PropsWithChildren) {
   const queued = useRef<Command | null>(null);
   const activeOwner = useRef<string | undefined>(undefined);
   const [state, setState] = useState<AudioState>(idle);
-  const command = useCallback((value: Command) => {
+  const command = useCallback((input: Command) => {
+    const value = { ...input, ...(input.url ? { url: resolveMediaUrl(input.url) } : {}) };
     if (value.type === 'toggle') activeOwner.current = value.ownerId;
     else if (value.type === 'stop') activeOwner.current = undefined;
     if (!ready.current) {
@@ -143,6 +143,8 @@ export function AudioProvider({ children }: PropsWithChildren) {
           opacity: 0,
         }}
         originWhitelist={['*']}
+        allowFileAccess
+        allowFileAccessFromFileURLs
         mediaPlaybackRequiresUserAction={false}
         allowsInlineMediaPlayback
         onLoadEnd={() => {

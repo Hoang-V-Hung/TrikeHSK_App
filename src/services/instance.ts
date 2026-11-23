@@ -1,4 +1,5 @@
 import ky from 'ky';
+import { offlineFetch } from './offline/transport';
 import { API_CONFIG } from './config';
 import {
   getToken,
@@ -68,6 +69,7 @@ const refreshSession = async (version: number): Promise<string | null> => {
 
 export const instance = ky.extend({
   prefixUrl,
+  fetch: offlineFetch,
   timeout: API_CONFIG.timeoutMs,
   retry: { limit: API_CONFIG.retryCount, methods: ['get'] },
   headers: { Accept: 'application/json' },

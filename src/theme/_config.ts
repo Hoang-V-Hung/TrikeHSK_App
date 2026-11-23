@@ -56,7 +56,7 @@ const baseColorsDark = {
   skeleton: '#303030',
 } as const;
 
-const dialogAction = '#1F3E5B';
+const dialogAction = baseColorsLight.primary;
 
 const colorsLight = {
   ...baseColorsLight,
@@ -64,7 +64,7 @@ const colorsLight = {
   dialogBackground: DefaultTheme.colors.card,
   dialogAction,
   dialogBorder: baseColorsLight.gray100,
-  dialogText: dialogAction,
+  dialogText: '#1F3E5B',
   warningBackground: '#FFFBEB',
   warningText: '#B45309',
   mediaBackground: '#000000',

@@ -1,4 +1,6 @@
+import { warmLessonMedia } from '@/services/offline/cache';
 // @refresh reset
+import { readLearningDraft, clearLearningDraft, useLearningDraft } from '@/services/offline/drafts';
 import { PracticeHeader } from '../../components/PracticeHeader';
 import { useStudyTimer } from '@/hooks/useStudyTimer';
 import { useScreenBackHandler } from '@/navigation/useScreenBackHandler';
@@ -42,15 +44,19 @@ export const WritingPracticeView = ({ hskLevel, topic, wordOrder, onBack, onSubm
         setIsLoading(true);
         const vocabularies = await vocabularyApi.getAllForPractice({ hskLevel, topic });
         if (cancelled) return;
+        void warmLessonMedia(vocabularies);
         const fetchedWords: WritingPracticeWord[] = vocabularies.map(v => ({
           id: v.id.toString(),
           character: v.hanzi,
           pinyin: v.pinyin,
           meaning: v.meaning,
         }));
-        setWords(orderWritingWords(fetchedWords, wordOrder));
-        setCurrentIndex(0);
-        setStatuses({});
+        const ordered = orderWritingWords(fetchedWords, wordOrder);
+        const draft = readLearningDraft(`writing:${hskLevel}:${topic}`);
+        const validIds = new Set(ordered.map(word => word.id));
+        setWords(ordered);
+        setCurrentIndex(Math.max(0, Math.min(ordered.length - 1, draft.currentIndex || 0)));
+        setStatuses(Object.fromEntries(Object.entries(draft.statuses || {}).filter(([id]) => validIds.has(id))));
       } catch (err) {
         if (!cancelled) {
           setWords([]);
@@ -64,10 +70,12 @@ export const WritingPracticeView = ({ hskLevel, topic, wordOrder, onBack, onSubm
     return () => { cancelled = true; };
   }, [hskLevel, topic, wordOrder]);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const draftKey = `writing:${hskLevel}:${topic}`;
+  const [currentIndex, setCurrentIndex] = useState(() => readLearningDraft(draftKey).currentIndex || 0);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showGridModal, setShowGridModal] = useState(false);
-  const [statuses, setStatuses] = useState<Record<string, 'done' | 'skipped'>>({});
+  const [statuses, setStatuses] = useState<Record<string, 'done' | 'skipped'>>(() => readLearningDraft(draftKey).statuses || {});
+  useLearningDraft(draftKey, !isLoading && words.length > 0, { statuses, currentIndex });
   const [isDrawing, setIsDrawing] = useState(false);
   const [writingWidth, setWritingWidth] = useState(0);
   
@@ -182,6 +190,7 @@ export const WritingPracticeView = ({ hskLevel, topic, wordOrder, onBack, onSubm
   const handleConfirmSubmit = () => {
     setShowSubmitModal(false);
     onSubmit({ totalCount, answeredCount, statuses, words, durationInSeconds: studyTimer.takeSeconds() });
+    clearLearningDraft(draftKey);
   };
 
   const handleExitPress = () => {

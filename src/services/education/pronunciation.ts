@@ -1,6 +1,7 @@
 import { HTTPError } from 'ky';
 import { z } from 'zod';
 import { instance } from '../instance';
+import { isOffline } from '../offline/store';
 import type { VoiceRecordingAudio } from '../audio/VoiceRecorder';
 
 const score = z.number().min(0).max(100);
@@ -23,6 +24,7 @@ const assessmentSchema = z.object({
 export type PronunciationAssessment = z.infer<typeof assessmentSchema>;
 
 export async function assessPronunciation(audio: VoiceRecordingAudio, referenceText: string, signal: AbortSignal): Promise<PronunciationAssessment> {
+  if (isOffline()) throw new Error('Đang học ngoại tuyến. Bạn có thể ghi âm và nghe lại; kết nối mạng để chấm phát âm Azure.');
   if (!referenceText.trim()) throw new Error('Câu này chưa có nội dung tiếng Trung để đối chiếu.');
   const form = new FormData();
   // React Native's multipart uploader supports data URIs on Android and iOS.

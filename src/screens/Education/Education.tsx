@@ -1,9 +1,11 @@
 // @refresh reset
 import React, { useEffect, useRef, useState } from 'react';
+import { recordLearningResult, practiceContext, savedResults } from '@/services/offline/sync';
 import type { LearnScreenParams } from '@/navigation/types';
 import { useScrollToTop } from '@react-navigation/native';
 import { useScreenBackHandler } from '@/navigation/useScreenBackHandler';
 import { SafeAreaView, ScrollView } from 'react-native';
+import { OfflineLearningCard } from './components/OfflineLearningCard';
 import { EducationHeader } from './components/EducationHeader';
 import { EducationSegment } from './components/EducationSegment';
 import { SkillPracticeView } from './Skills/components/SkillPracticeView';
@@ -34,7 +36,7 @@ export function EducationContent({ route }: any) {
   const [selectedHsk, setSelectedHsk] = useState<number>(1);
   const [activeExamId, setActiveExamId] = useState<string | null>(null);
   const [examDuration, setExamDuration] = useState<number>(30);
-  const [examResults, setExamResults] = useState<Record<string, ExamResult>>({});
+  const [examResults, setExamResults] = useState<Record<string, ExamResult>>(() => savedResults() as Record<string, ExamResult>);
   const [speakingResult, setSpeakingResult] = useState<SpeakingPracticeResult | null>(null);
 
   const [practiceHsk, setPracticeHsk] = useState<number>(1);
@@ -110,11 +112,14 @@ export function EducationContent({ route }: any) {
   };
 
   const handleSubmitExam = (result: ExamResult) => {
-    setExamResults(prev => ({ ...prev, [result.examId]: result }));
+    const localAttemptId = recordLearningResult(result.examId, { ...result }, { kind: 'exam', sourceId: Number(result.examId), title: `Đề HSK ${selectedHsk}` });
+    setExamResults(prev => ({ ...prev, [result.examId]: { ...result, localAttemptId } }));
     setViewMode('examResult');
   };
 
   const handleReviewExam = () => {
+    const confirmed = savedResults()[activeExamId || ''] as ExamResult | undefined;
+    if (activeExamId && confirmed) setExamResults(previous => ({ ...previous, [activeExamId]: confirmed }));
     setViewMode('examReview');
   };
 
@@ -231,6 +236,7 @@ export function EducationContent({ route }: any) {
           topic={practiceTopic}
           onBack={() => setViewMode('skillSetup')}
           onSubmit={(result) => {
+            recordLearningResult('speaking_practice', { ...result }, { title: `Luyện nói HSK ${practiceHsk}` });
             setSpeakingResult(result);
             setViewMode('skillPracticeResult');
           }}
@@ -245,6 +251,7 @@ export function EducationContent({ route }: any) {
           practiceSetId={readingPracticeSetId}
           onBack={() => setViewMode('skillSetup')}
           onSubmit={(result) => {
+            recordLearningResult('reading_practice', result, practiceContext(readingPracticeSetId));
             setExamResults(prev => ({ ...prev, 'reading_practice': result as any }));
             setViewMode('skillPracticeResult');
           }}
@@ -260,6 +267,7 @@ export function EducationContent({ route }: any) {
           wordOrder={writingWordOrder}
           onBack={() => setViewMode('skillSetup')}
           onSubmit={(result) => {
+            recordLearningResult('writing_practice', result, { title: `Luyện viết HSK ${practiceHsk}` });
             setExamResults(prev => ({ ...prev, 'writing_practice': result as any }));
             setViewMode('skillPracticeResult');
           }}
@@ -274,6 +282,7 @@ export function EducationContent({ route }: any) {
         practiceSetId={listeningPracticeSetId}
         onBack={() => setViewMode('skillSetup')}
         onSubmit={(result) => {
+          recordLearningResult('listening_practice', result, practiceContext(listeningPracticeSetId));
           setExamResults(prev => ({ ...prev, 'listening_practice': result as any }));
           setViewMode('skillPracticeResult');
         }}
@@ -362,6 +371,8 @@ export function EducationContent({ route }: any) {
             }}
           />
         )}
+
+        <OfflineLearningCard />
 
         {activeTab === 1 && (
           <HskLevelGridView

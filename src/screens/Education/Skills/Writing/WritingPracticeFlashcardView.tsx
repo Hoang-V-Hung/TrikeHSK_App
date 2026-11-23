@@ -1,3 +1,4 @@
+import { warmLessonMedia } from '@/services/offline/cache';
 import React, { useReducer, useRef, useState } from 'react';
 import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { AppAlert } from '@/services/feedback/appAlert';
@@ -46,6 +47,7 @@ export const WritingPracticeFlashcardView = ({ hskLevel, topic, onBack, onFinish
         setIsLoading(true);
         const vocabularies = await vocabularyApi.getAllForPractice({ hskLevel, topic });
         if (cancelled) return;
+        void warmLessonMedia(vocabularies);
         const fetchedWords: WritingPracticeWord[] = vocabularies.map(v => ({
           id: v.id.toString(),
           character: v.hanzi,

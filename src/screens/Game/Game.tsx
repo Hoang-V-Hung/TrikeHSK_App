@@ -1,4 +1,5 @@
 // @refresh reset
+import { isOffline } from '@/services/offline/store';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useScreenBackHandler } from '@/navigation/useScreenBackHandler';
 import { useTabLeaveGuard } from '@/navigation/tabLeaveGuard';
@@ -73,7 +74,10 @@ export function GameContent({ navigation, route, targetView: propTargetView }: a
   useEffect(() => {
     if (!isFocused && (viewState === 'matching' || viewState === 'battle')) setViewState('main');
   }, [isFocused, viewState, setViewState]);
-  const handleSearch = () => { setMatchAttempt(value => value + 1); setViewState('matching'); };
+  const handleSearch = () => {
+    if (isOffline()) { AppAlert.warning('PK cần kết nối mạng', 'Hãy bật mạng và tắt chế độ chỉ học ngoại tuyến để tìm đối thủ.'); return; }
+    setMatchAttempt(value => value + 1); setViewState('matching');
+  };
 
   const handleBattleComplete = async () => {
     await Promise.all([

@@ -82,6 +82,8 @@ export interface HskExam {
 }
 
 export interface ExamResult {
+  localAttemptId?: string;
+  pendingSync?: boolean;
   durationInSeconds?: number;
   examId: string;
   score: number | null;

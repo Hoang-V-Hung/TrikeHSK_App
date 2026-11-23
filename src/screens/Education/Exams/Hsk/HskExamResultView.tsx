@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useOffline } from '@/services/offline/useOffline';
+import { confirmedLearningResult } from '@/services/offline/sync';
 import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { ExamResult } from '../../types';
@@ -13,7 +15,9 @@ interface Props {
   onRetake: () => void;
 }
 
-export const HskExamResultView = ({ result, onBack, onReview, onRetake }: Props) => {
+export const HskExamResultView = ({ result: initialResult, onBack, onReview, onRetake }: Props) => {
+  useOffline();
+  const result = confirmedLearningResult({ ...initialResult }) as unknown as ExamResult;
   const { colors } = useTheme();
   const [filterMode, setFilterMode] = useState<'ALL' | 'WRONG'>('WRONG');
   const examIndex = result.examId.split('_')[1] || '1';
@@ -49,6 +53,7 @@ export const HskExamResultView = ({ result, onBack, onReview, onRetake }: Props)
         {/* Top Result Card */}
         <View style={{ backgroundColor: colors.surface, borderRadius: ms(12), padding: ms(16), marginBottom: vs(16), borderWidth: 1, borderColor: '#E5E7EB' }}>
 
+          {result.localAttemptId && <Text style={{ color: colors.gray800, fontSize: ms(13), lineHeight: ms(20), marginBottom: ms(12) }}>{result.pendingSync ? 'Bài làm đã lưu trên máy. Đang chờ máy chủ chấm và xác nhận; điểm hiện tại chỉ là tạm tính.' : 'Bài làm đã được máy chủ chấm và lưu vào lịch sử.'}</Text>}
           <View style={{ backgroundColor: '#F4EBE6', borderRadius: ms(8), paddingVertical: vs(24), alignItems: 'center', marginBottom: vs(20) }}>
             <Text style={{ fontSize: ms(40), fontWeight: '900', color: '#DC2626', marginBottom: vs(4) }}>
               {result.score === null ? 'Chưa chấm tự động' : `${result.score}%`}
@@ -56,7 +61,7 @@ export const HskExamResultView = ({ result, onBack, onReview, onRetake }: Props)
             <Text style={{ fontSize: ms(16), color: '#4B5563', fontWeight: '600' }}>
               Đúng {result.correctCount}/{gradedCount} câu chấm tự động
             </Text>
-            {!!result.manualCount && <Text style={{ fontSize: ms(13), color: '#4B5563', marginTop: vs(8) }}>{result.manualCount} câu Viết tự đối chiếu, không tính vào điểm này.</Text>}
+            {!!result.manualCount && <Text style={{ fontSize: ms(13), color: '#4B5563', marginTop: vs(8) }}>{result.manualCount} câu chưa được chấm tự động, không tính vào điểm này.</Text>}
           </View>
 
           <Text style={{ fontSize: ms(20), color: '#6B7280', fontWeight: '500', marginBottom: vs(4) }}>Kết quả của bạn</Text>

@@ -1,4 +1,6 @@
+import { useOfflineLesson } from '@/services/offline/useOffline';
 // @refresh reset
+import { readLearningDraft, clearLearningDraft, useLearningDraft, remainingExamSeconds } from '@/services/offline/drafts';
 import { PracticeHeader } from '../../components/PracticeHeader';
 import { SharedAudioHeader, SharedAudioEnd } from '../../components/SharedAudioHeader';
 import { buildSharedAudioRows, audioStickyHeaderIndices } from '../../components/sharedAudioRows';
@@ -7,7 +9,7 @@ import { useAudioListScroll } from '../../components/useAudioListScroll';
 import { useStudyTimer } from '@/hooks/useStudyTimer';
 import { useScreenBackHandler } from '@/navigation/useScreenBackHandler';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, SafeAreaView, FlatList, TouchableOpacity, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { View, Text, SafeAreaView, FlatList, TouchableOpacity, KeyboardAvoidingView, Platform, Keyboard, AppState } from 'react-native';
 import { AppAlert } from '@/services/feedback/appAlert';
 import { hasExamAnswer, hasExamAnswerKey, isExamAnswerCorrect } from '@/services/exams/answers';
 import { HskExamQuestionCard } from './HskExamQuestionCard';
@@ -24,15 +26,22 @@ interface Props {
   reviewQuestions?: ExamQuestion[];
 }
 
-const ExamTimer = ({ durationMin }: { durationMin: number }) => {
-  const [timeLeft, setTimeLeft] = useState(durationMin * 60);
+const ExamTimer = ({ deadline, onExpire }: { deadline: number; onExpire: () => void }) => {
+  const remaining = () => remainingExamSeconds(deadline);
+  const [timeLeft, setTimeLeft] = useState(remaining);
+  const callback = React.useRef(onExpire);
+  callback.current = onExpire;
+  const expired = React.useRef(false);
 
   useEffect(() => {
-    if (timeLeft <= 0) return;
-    const timerId = setInterval(() => {
-      setTimeLeft(prev => prev - 1);
-    }, 1000);
-    return () => clearInterval(timerId);
+    const tick = () => setTimeLeft(remainingExamSeconds(deadline));
+    tick();
+    const timerId = setInterval(tick, 1000);
+    const foreground = AppState.addEventListener('change', state => { if (state === 'active') tick(); });
+    return () => { clearInterval(timerId); foreground.remove(); };
+  }, [deadline]);
+  useEffect(() => {
+    if (timeLeft === 0 && !expired.current) { expired.current = true; callback.current(); }
   }, [timeLeft]);
 
   const m = Math.floor(timeLeft / 60);
@@ -52,7 +61,11 @@ import { HskExam, ExamQuestion } from '../../types';
 
 export const HskExamTestView = ({ examId, durationMin, onBack, onSubmit, isReviewMode, reviewAnswers, reviewQuestions }: Props) => {
   const { colors } = useTheme();
+  const draftKey = `exam:${examId}`;
+  const deadline = React.useRef(readLearningDraft(draftKey).deadline || Date.now() + durationMin * 60000).current;
+  const submitted = React.useRef(false);
   const [fullExam, setFullExam] = useState<HskExam | null>(null);
+  useOfflineLesson(fullExam);
   const [isLoading, setIsLoading] = useState(true);
   const onBackRef = React.useRef(onBack);
   onBackRef.current = onBack;
@@ -74,8 +87,9 @@ export const HskExamTestView = ({ examId, durationMin, onBack, onSubmit, isRevie
         }
         const hasGradedReview = reviewQuestions?.length && reviewQuestions.every(question => question.requiresManualReview || hasExamAnswerKey(question));
         setFullExam(isReviewMode && hasGradedReview ? { ...examApp, questions: reviewQuestions } : examApp);
-        setAnswers(reviewAnswers || {});
-        setBookmarks({});
+        const draft = isReviewMode ? {} : readLearningDraft(draftKey);
+        setAnswers(reviewAnswers || draft.answers || {});
+        setBookmarks(draft.bookmarks || {});
       } catch (err) {
         if (!cancelled) { setFullExam(null); AppAlert.error('Không thể tải đề thi', err instanceof ExamResponseMismatchError ? err.message : 'Vui lòng kiểm tra kết nối.', [{ text: 'OK', onPress: () => onBackRef.current() }]); }
       } finally {
@@ -95,6 +109,7 @@ export const HskExamTestView = ({ examId, durationMin, onBack, onSubmit, isRevie
   const [answers, setAnswers] = useState<Record<string, string>>(reviewAnswers || {});
   const [bookmarks, setBookmarks] = useState<Record<string, boolean>>({});
   
+  useLearningDraft(draftKey, !isLoading && !isReviewMode && questions.length > 0, { answers, bookmarks, deadline });
   const [showGridModal, setShowGridModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
@@ -119,12 +134,8 @@ export const HskExamTestView = ({ examId, durationMin, onBack, onSubmit, isRevie
 
   const handleConfirmSubmit = () => {
     setShowSubmitModal(false);
-    if (!onSubmit || !questions.length) return;
-    const gradedQuestions = questions.filter(question => !question.requiresManualReview);
-    if (gradedQuestions.some(question => !hasExamAnswerKey(question))) {
-      AppAlert.error('Chưa chấm được bài thi', 'Đề thi chưa có đủ đáp án để chấm. Bài làm vẫn được giữ; bạn có thể thử nộp lại.');
-      return;
-    }
+    if (!onSubmit || !questions.length || submitted.current) return;
+    const gradedQuestions = questions.filter(question => !question.requiresManualReview && hasExamAnswerKey(question));
     
     let correct = 0;
     let listCorrect = 0;
@@ -142,7 +153,8 @@ export const HskExamTestView = ({ examId, durationMin, onBack, onSubmit, isRevie
 
     const result = {
       examId,
-      score: gradedQuestions.length ? Math.round((correct / gradedQuestions.length) * 100) : null,
+      pendingSync: true,
+      score: gradedQuestions.length && gradedQuestions.every(hasExamAnswerKey) ? Math.round((correct / gradedQuestions.length) * 100) : null,
       gradedCount: gradedQuestions.length,
       manualCount: questions.length - gradedQuestions.length,
       correctCount: correct,
@@ -152,11 +164,13 @@ export const HskExamTestView = ({ examId, durationMin, onBack, onSubmit, isRevie
       writingCorrect: writeCorrect,
       date: new Date().toLocaleDateString('vi-VN'),
       answers,
-      questions,
+      questions: questions.map(question => hasExamAnswerKey(question) ? question : { ...question, requiresManualReview: true }),
       durationInSeconds: studyTimer.takeSeconds(),
     };
     
-    onSubmit(result);
+    submitted.current = true;
+    try { onSubmit(result); clearLearningDraft(draftKey); }
+    catch { submitted.current = false; AppAlert.error('Chưa lưu được bài thi', 'Bài làm vẫn được giữ trên máy. Hãy kiểm tra bộ nhớ và thử nộp lại.'); }
   };
 
   const handleGridPress = (qId: string) => {
@@ -262,7 +276,7 @@ export const HskExamTestView = ({ examId, durationMin, onBack, onSubmit, isRevie
         onOpenGrid={() => { Keyboard.dismiss(); setShowGridModal(true); }}
         onSubmit={isReviewMode ? onBack : () => setShowSubmitModal(true)}
         submitLabel={isReviewMode ? 'Về kết quả' : 'Nộp bài'}
-        timer={!isReviewMode ? <ExamTimer durationMin={durationMin} /> : undefined}
+        timer={!isReviewMode ? <ExamTimer deadline={deadline} onExpire={handleConfirmSubmit} /> : undefined}
       />
 
       {/* Main Content */}
