@@ -25,15 +25,22 @@
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
+			<key>CFBundleURLName</key>
+			<string>GoogleSignIn</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.345119545241-mmmh33dch3fdcj4f5t0r9t40ltmd0qse</string>
+			</array>
+		</dict>
+		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array><string>tricehsk</string><string>apphsk</string></array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<!-- Set GIDClientID and its reversed URL scheme after creating the iOS OAuth client. -->
 	<key>GIDClientID</key>
-	<string></string>
+	<string>345119545241-mmmh33dch3fdcj4f5t0r9t40ltmd0qse.apps.googleusercontent.com</string>
 	<key>GIDServerClientID</key>
 	<string>345119545241-k6t3b710sm1mm7ssv1t75peqfsk1mcfv.apps.googleusercontent.com</string>
 	<key>LSRequiresIPhoneOS</key>
