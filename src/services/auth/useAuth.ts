@@ -1,7 +1,9 @@
+import { clearGoogleSignIn } from './google';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi } from './api';
 import {
   LoginDto,
+  GoogleLoginDto,
   RegisterDto,
   UpdateProfileDto,
   UpdateStudyGoalsDto,
@@ -30,8 +32,18 @@ export const useLogin = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (dto: LoginDto) => {
-      const response = await authApi.login(dto);
+    mutationFn: async (dto: LoginDto | GoogleLoginDto) => {
+      const version = getAuthSessionVersion();
+      const response =
+        'idToken' in dto
+          ? await authApi.googleLogin(dto)
+          : await authApi.login(dto);
+      if (version !== getAuthSessionVersion())
+        throw new Error('Phiên đăng nhập đã thay đổi. Vui lòng thử lại.');
+      await queryClient.cancelQueries();
+      queryClient.removeQueries();
+      if (version !== getAuthSessionVersion())
+        throw new Error('Phiên đăng nhập đã thay đổi. Vui lòng thử lại.');
       saveAuthSession(response);
       const user = await syncPendingSurvey(response.user);
       if (getUser<User>()?.id === user.id) saveUser(user);
@@ -59,7 +71,8 @@ export const useProfile = () => {
     queryFn: async () => {
       const version = getAuthSessionVersion();
       const user = await authApi.getMe();
-      if (version !== getAuthSessionVersion()) throw new Error('Phiên đăng nhập đã thay đổi.');
+      if (version !== getAuthSessionVersion())
+        throw new Error('Phiên đăng nhập đã thay đổi.');
       saveUser(user);
       return user;
     },
@@ -76,7 +89,8 @@ export const useUpdateProfile = () => {
     mutationFn: async (dto: UpdateProfileDto) => {
       const version = getAuthSessionVersion();
       const updated = await authApi.updateProfile(dto);
-      if (version !== getAuthSessionVersion()) throw new Error('Phiên đăng nhập đã thay đổi.');
+      if (version !== getAuthSessionVersion())
+        throw new Error('Phiên đăng nhập đã thay đổi.');
       saveUser(updated);
       return updated;
     },
@@ -93,8 +107,14 @@ export const useLogout = () => {
   return useMutation({
     mutationFn: async () => {
       const version = getAuthSessionVersion();
-      try { await authApi.logout(); }
-      finally { if (version === getAuthSessionVersion()) clearAuthSession(); }
+      try {
+        await authApi.logout();
+      } finally {
+        if (version === getAuthSessionVersion()) {
+          clearAuthSession();
+          await clearGoogleSignIn();
+        }
+      }
     },
     onSuccess: () => {
       void queryClient.cancelQueries();
@@ -110,16 +130,23 @@ export const useUpdateStudyGoals = () => {
     mutationFn: async (dto: UpdateStudyGoalsDto) => {
       const version = getAuthSessionVersion();
       const updated = await authApi.updateStudyGoals(dto);
-      if (version !== getAuthSessionVersion()) throw new Error('Phiên đăng nhập đã thay đổi.');
+      if (version !== getAuthSessionVersion())
+        throw new Error('Phiên đăng nhập đã thay đổi.');
       saveUser(updated);
       const answers = getSurveyData(updated.id);
       if (answers && hasPendingSurvey(updated.id)) {
         // A later Survey retry must preserve goals already saved in Settings.
         saveSurveyData(updated.id, {
           ...answers,
-          ...(dto.currentHskLevel !== undefined ? { currentLevel: `HSK ${dto.currentHskLevel}` } : {}),
-          ...(dto.targetHskLevel !== undefined ? { targetLevel: `HSK ${dto.targetHskLevel}` } : {}),
-          ...(dto.dailyStudyTime !== undefined ? { dailyTime: `${dto.dailyStudyTime} phút` } : {}),
+          ...(dto.currentHskLevel !== undefined
+            ? { currentLevel: `HSK ${dto.currentHskLevel}` }
+            : {}),
+          ...(dto.targetHskLevel !== undefined
+            ? { targetLevel: `HSK ${dto.targetHskLevel}` }
+            : {}),
+          ...(dto.dailyStudyTime !== undefined
+            ? { dailyTime: `${dto.dailyStudyTime} phút` }
+            : {}),
         });
       }
       return updated;

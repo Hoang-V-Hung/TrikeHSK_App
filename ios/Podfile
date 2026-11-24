@@ -17,6 +17,8 @@ end
 target 'apphsk' do
   config = use_native_modules!
 
+  pod 'GoogleSignIn', '~> 9.0'
+
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.

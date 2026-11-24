@@ -1,5 +1,6 @@
 {
   "name": "apphsk",
   "displayName": "apphsk",
-  "websiteUrl": "https://trike-hsk-web-tau.vercel.app"
+  "websiteUrl": "https://trike-hsk-web-tau.vercel.app",
+  "googleWebClientId": "345119545241-k6t3b710sm1mm7ssv1t75peqfsk1mcfv.apps.googleusercontent.com"
 }

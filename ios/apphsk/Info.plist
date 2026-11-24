@@ -31,6 +31,11 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<!-- Set GIDClientID and its reversed URL scheme after creating the iOS OAuth client. -->
+	<key>GIDClientID</key>
+	<string></string>
+	<key>GIDServerClientID</key>
+	<string>345119545241-k6t3b710sm1mm7ssv1t75peqfsk1mcfv.apps.googleusercontent.com</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>

@@ -19,6 +19,7 @@ let refreshOperation: {
 const isPublicAuth = (url: string) =>
   [
     'auth/email/login',
+    'auth/google/login',
     'auth/email/register',
     'auth/forgot/password',
     'auth/reset/password',
@@ -78,7 +79,9 @@ export const instance = ky.extend({
       (request, options) => {
         // Ky clones Request before afterResponse; context survives that clone.
         options.context[AUTH_SESSION_CONTEXT_KEY] ??= getAuthSessionVersion();
-        if (options.context[AUTH_SESSION_CONTEXT_KEY] !== getAuthSessionVersion()) {
+        if (
+          options.context[AUTH_SESSION_CONTEXT_KEY] !== getAuthSessionVersion()
+        ) {
           throw new Error('Phiên đăng nhập đã thay đổi. Vui lòng thử lại.');
         }
         const token = getToken();

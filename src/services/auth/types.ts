@@ -38,6 +38,10 @@ export interface LoginDto {
   password: string;
 }
 
+export interface GoogleLoginDto {
+  idToken: string;
+}
+
 export interface RegisterDto {
   email: string;
   password: string;

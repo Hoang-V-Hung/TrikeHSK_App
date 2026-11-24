@@ -1,6 +1,8 @@
+import { googleLoginSession } from './google';
 import { instance } from '../instance';
 import {
   LoginDto,
+  GoogleLoginDto,
   LoginResponse,
   RegisterDto,
   User,
@@ -21,6 +23,13 @@ export const authApi = {
       .json<LoginResponse>();
   },
 
+  googleLogin: async (dto: GoogleLoginDto): Promise<LoginResponse> => {
+    const result = await instance
+      .post('auth/google/login', { json: dto })
+      .json<unknown>();
+    return googleLoginSession(result);
+  },
+
   register: async (dto: RegisterDto): Promise<void> => {
     await instance.post('auth/email/register', {
       json: dto,
@@ -34,7 +43,10 @@ export const authApi = {
   updateProfile: async (dto: UpdateProfileDto): Promise<User> => {
     await instance.patch('auth/me', { json: dto });
     const updated = await authApi.getMe();
-    if (dto.fullName !== undefined && updated.fullName !== dto.fullName.trim()) {
+    if (
+      dto.fullName !== undefined &&
+      updated.fullName !== dto.fullName.trim()
+    ) {
       throw new Error('Backend chưa lưu được tên hiển thị.');
     }
     return updated;
@@ -71,9 +83,19 @@ export const authApi = {
     // A 200 response alone does not confirm persistence. The PATCH response
     // can also omit HSK fields due to the backend's serialization groups.
     const updated = await authApi.getMe();
-    const fields = ['currentHskLevel', 'targetHskLevel', 'dailyStudyTime'] as const;
-    if (fields.some((field) => dto[field] !== undefined && updated[field] !== dto[field])) {
-      throw new Error('Máy chủ chưa lưu được trình độ HSK hoặc mục tiêu học. Vui lòng thử lại sau.');
+    const fields = [
+      'currentHskLevel',
+      'targetHskLevel',
+      'dailyStudyTime',
+    ] as const;
+    if (
+      fields.some(
+        (field) => dto[field] !== undefined && updated[field] !== dto[field],
+      )
+    ) {
+      throw new Error(
+        'Máy chủ chưa lưu được trình độ HSK hoặc mục tiêu học. Vui lòng thử lại sau.',
+      );
     }
     return updated;
   },

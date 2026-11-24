@@ -1,4 +1,5 @@
 import UIKit
+import GoogleSignIn
 import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
@@ -11,7 +12,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   var reactNativeFactory: RCTReactNativeFactory?
 
   func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-    RCTLinkingManager.application(application, open: url, options: options)
+    if GIDSignIn.sharedInstance.handle(url) {
+      return true
+    }
+    return RCTLinkingManager.application(application, open: url, options: options)
   }
 
   func application(
