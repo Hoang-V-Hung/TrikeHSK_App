@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image, useWindowDimensions } from 'react-native';
 import DatePicker from 'react-native-date-picker';
-import { ms, hs, vs } from '@/theme';
+import { ms, hs, vs, useTheme } from '@/theme';
 
 interface Props {
   onNext: (answer: string) => void;
 }
 
 export const SurveyStep3 = ({ onNext }: Props) => {
+  const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const imageSize = width * 0.8;
   const [showOtherPicker, setShowOtherPicker] = useState(false);
@@ -64,6 +65,7 @@ export const SurveyStep3 = ({ onNext }: Props) => {
         mode="time"
         locale="vi-VN"
         title="Chọn thời gian luyện tập"
+        buttonColor={colors.primaryAction}
         confirmText="Xác nhận"
         cancelText="Hủy"
         onConfirm={(selectedDate) => {

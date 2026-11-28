@@ -11,7 +11,8 @@ export function SharedAudioHeader({
   label: string;
   onHeight: (height: number) => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, variant } = useTheme();
+  const textColor = variant === 'dark' ? colors.accentLightBlue : colors.primaryAction;
   return (
     <View
       onLayout={(event) => onHeight(event.nativeEvent.layout.height)}
@@ -29,7 +30,7 @@ export function SharedAudioHeader({
       >
         <Text
           accessibilityRole="header"
-          style={{ fontSize: ms(13), fontWeight: '700', color: colors.dialogAction }}
+          style={{ fontSize: ms(13), fontWeight: '700', color: textColor }}
         >
           Audio dùng chung · {label}
         </Text>
@@ -37,6 +38,7 @@ export function SharedAudioHeader({
           url={url}
           label={`chung ${label.toLowerCase()}`}
           seekable
+          textColor={textColor}
         />
       </View>
     </View>

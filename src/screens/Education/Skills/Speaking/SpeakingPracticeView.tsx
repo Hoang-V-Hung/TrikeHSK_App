@@ -9,7 +9,7 @@ import Svg, { Path } from 'react-native-svg';
 import { educationApi } from '@/services/education/api';
 import { transformQuestionToSpeaking } from '@/services/education/transformers';
 import { SpeakingPracticeQuestion, SpeakingPracticeResult } from '../../types';
-import { ms, hs, vs, useControlSizes } from '@/theme';
+import { ms, hs, vs, useControlSizes, useTheme } from '@/theme';
 import { SubmitConfirmModal, QuestionGridModal } from '@/screens/Education/components';
 import { useStudyTimer } from '@/hooks/useStudyTimer';
 import { useScreenBackHandler } from '@/navigation/useScreenBackHandler';
@@ -32,6 +32,7 @@ type RecordState = 'idle' | 'preparing' | 'recording' | 'processing' | 'result';
 type Recording = { durationMs: number; bytes: number; status: 'pending' | 'graded' | 'error'; assessment?: PronunciationAssessment; error?: string };
 
 export const SpeakingPracticeView = ({ hskLevel, topic, onBack, onSubmit }: Props) => {
+  const { colors } = useTheme();
   const controlSizes = useControlSizes();
   const [questions, setQuestions] = useState<SpeakingPracticeQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -283,7 +284,7 @@ export const SpeakingPracticeView = ({ hskLevel, topic, onBack, onSubmit }: Prop
     return (
       <SafeAreaView onTouchStart={studyTimer.markActivity} onTouchMove={studyTimer.markActivity} style={{ flex: 1, backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center' }}>
         <Text style={{ fontSize: ms(16), color: '#4B5563', marginBottom: vs(16) }}>Không có câu hỏi nào.</Text>
-        <TouchableOpacity onPress={onBack} style={{ padding: ms(12), backgroundColor: '#1E3A8A', borderRadius: ms(8) }}>
+        <TouchableOpacity onPress={onBack} style={{ padding: ms(12), backgroundColor: colors.primaryAction, borderRadius: ms(8) }}>
           <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Quay lại</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -329,7 +330,7 @@ export const SpeakingPracticeView = ({ hskLevel, topic, onBack, onSubmit }: Prop
                 <TouchableOpacity
                   accessibilityRole="button" accessibilityLabel="Bắt đầu ghi âm"
                   onPress={startRecording}
-                  style={{ width: controlSizes.recordButton, height: controlSizes.recordButton, borderRadius: controlSizes.recordButton / 2, backgroundColor: '#1E3A8A', justifyContent: 'center', alignItems: 'center', marginBottom: vs(12) }}
+                  style={{ width: controlSizes.recordButton, height: controlSizes.recordButton, borderRadius: controlSizes.recordButton / 2, backgroundColor: colors.primaryAction, justifyContent: 'center', alignItems: 'center', marginBottom: vs(12) }}
                 >
                   <Svg height={controlSizes.icon} viewBox="0 0 24 24" width={controlSizes.icon}>
                     <Path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -397,7 +398,7 @@ export const SpeakingPracticeView = ({ hskLevel, topic, onBack, onSubmit }: Prop
                     <Text style={{ color: '#374151', fontSize: ms(15), fontWeight: '700' }}>Đọc lại</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity disabled={currentIndex === totalCount - 1 && isGrading} onPress={handleNext} style={{ flex: 1, backgroundColor: '#1E3A8A', borderRadius: ms(8), paddingVertical: vs(12), alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: hs(6), opacity: currentIndex === totalCount - 1 && isGrading ? 0.5 : 1 }}>
+                  <TouchableOpacity disabled={currentIndex === totalCount - 1 && isGrading} onPress={handleNext} style={{ flex: 1, backgroundColor: colors.primaryAction, borderRadius: ms(8), paddingVertical: vs(12), alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: hs(6), opacity: currentIndex === totalCount - 1 && isGrading ? 0.5 : 1 }}>
                     <Text style={{ color: '#FFFFFF', fontSize: ms(16), fontWeight: '700' }}>{currentIndex < totalCount - 1 ? 'Tiếp theo' : 'Hoàn thành'}</Text>
                     <Svg height={ms(16)} viewBox="0 0 24 24" width={ms(16)}>
                       <Path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

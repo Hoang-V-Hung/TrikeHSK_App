@@ -121,7 +121,7 @@ export const RecommendedLessonsCard = ({
           }}
         >
           <Text
-            style={{ color: '#1F4086', fontSize: ms(13), fontWeight: '700' }}
+            style={{ color: colors.primaryAction, fontSize: ms(13), fontWeight: '700' }}
           >
             Xem tất cả {'>'}
           </Text>
@@ -185,7 +185,7 @@ export const RecommendedLessonsCard = ({
                 <SkillIcon skill={skill} size={20} />
                 <Text
                   style={{
-                    color: '#1F4086',
+                    color: colors.primaryAction,
                     fontSize: ms(14),
                     fontWeight: '700',
                     flex: 1,
@@ -235,7 +235,7 @@ export const RecommendedLessonsCard = ({
               >
                 <Text
                   style={{
-                    color: '#1F4086',
+                    color: colors.primaryAction,
                     fontSize: ms(12),
                     fontWeight: '700',
                   }}

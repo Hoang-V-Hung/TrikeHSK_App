@@ -35,7 +35,7 @@ function HistoryPageButton({ label, disabled, onPress }: {
       onPress={onPress}
       style={{ minHeight: 48, minWidth: 56, justifyContent: 'center', alignItems: 'center', opacity: disabled ? 0.45 : 1 }}
     >
-      <Text style={{ color: colors.primary, fontSize: ms(14), fontWeight: '600' }}>{label}</Text>
+      <Text style={{ color: colors.primaryAction, fontSize: ms(14), fontWeight: '600' }}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -363,7 +363,7 @@ export function GameContent({ navigation, route, targetView: propTargetView }: a
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: vs(12) }}>
           <Text style={{ fontSize: ms(20), fontWeight: '800', color: '#000000' }}>Lịch sử thi đấu</Text>
           <TouchableOpacity onPress={() => setViewState('leaderboard')}>
-            <Text style={{ fontSize: ms(15), fontWeight: '700', color: '#1F4086' }}>Xem bảng xếp hạng &gt;</Text>
+            <Text style={{ fontSize: ms(15), fontWeight: '700', color: colors.primaryAction }}>Xem bảng xếp hạng &gt;</Text>
           </TouchableOpacity>
         </View>
 
@@ -465,7 +465,7 @@ export function GameContent({ navigation, route, targetView: propTargetView }: a
                   style={{
                     fontSize: ms(16),
                     fontWeight: '900',
-                    color: '#1E40AF',
+                    color: colors.primaryAction,
                     width: hs(80),
                     textAlign: 'right',
                   }}

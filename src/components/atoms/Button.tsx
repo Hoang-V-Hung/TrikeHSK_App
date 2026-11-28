@@ -30,7 +30,7 @@ const Button = ({
 
   const getBackgroundColor = () => {
     if (disabled) return colors.gray100;
-    if (isPrimary) return colors.primary;
+    if (isPrimary) return colors.primaryAction;
     return 'transparent';
   };
 
@@ -38,7 +38,7 @@ const Button = ({
     if (disabled) return colors.gray400;
     if (textColor) return textColor;
     if (isPrimary) return '#FFFFFF';
-    return colors.primary;
+    return colors.primaryAction;
   };
 
   const getBorder = () => {

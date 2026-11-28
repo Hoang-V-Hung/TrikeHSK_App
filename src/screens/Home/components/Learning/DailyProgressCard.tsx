@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { hs, vs, ms } from '@/theme';
+import { hs, vs, ms, useTheme } from '@/theme';
 
 interface DailyProgressCardProps {
   userName: string;
@@ -9,6 +9,7 @@ interface DailyProgressCardProps {
 }
 
 export const DailyProgressCard = ({ userName, onStartLearning }: DailyProgressCardProps) => {
+  const { colors } = useTheme();
   return (
     <View style={{ paddingHorizontal: hs(16), marginBottom: vs(16) }}>
       <View
@@ -55,7 +56,7 @@ export const DailyProgressCard = ({ userName, onStartLearning }: DailyProgressCa
           style={{
             alignItems: 'center',
             alignSelf: 'center',
-            backgroundColor: '#1F4086',
+            backgroundColor: colors.primaryAction,
             borderRadius: ms(999),
             justifyContent: 'center',
             paddingVertical: vs(16),

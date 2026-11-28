@@ -60,7 +60,7 @@ const dialogAction = baseColorsLight.primary;
 
 const colorsLight = {
   ...baseColorsLight,
-  primaryAction: '#1E3A8A',
+  primaryAction: '#1F4086',
   dialogBackground: DefaultTheme.colors.card,
   dialogAction,
   dialogBorder: baseColorsLight.gray100,

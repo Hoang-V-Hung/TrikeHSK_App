@@ -8,14 +8,17 @@ export function QuestionAudioPlayer({
   url,
   label,
   seekable = false,
+  textColor,
 }: {
   url?: string | null;
   label: string;
   seekable?: boolean;
+  textColor?: string;
 }) {
   const audio = useAudioPlayback(url);
   const { colors } = useTheme();
   const sizes = useControlSizes();
+  const labelColor = textColor ?? colors.primaryAction;
   return (
     <View
       style={{
@@ -57,7 +60,7 @@ export function QuestionAudioPlayer({
           numberOfLines={1}
           style={{
             fontSize: ms(12),
-            color: colors.dialogAction,
+            color: labelColor,
             fontVariant: ['tabular-nums'],
           }}
         >
@@ -99,7 +102,7 @@ export function QuestionAudioPlayer({
               <Text
                 style={{
                   fontSize: ms(12),
-                  color: colors.dialogAction,
+                  color: labelColor,
                   fontWeight: '600',
                 }}
               >

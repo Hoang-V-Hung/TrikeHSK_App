@@ -3,7 +3,7 @@ import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, Dimensions } fr
 import { AppAlert } from '@/services/feedback/appAlert';
 import Svg, { Path } from 'react-native-svg';
 import { ScreenHeader } from '@/components/molecules';
-import { ms, hs, vs } from '@/theme';
+import { ms, hs, vs, useTheme } from '@/theme';
 import { vocabularyApi } from '@/services/vocabulary';
 import { useStudyTimer } from '@/hooks/useStudyTimer';
 import { recordVocabularyProgress } from '@/services/analytics/recording';
@@ -32,6 +32,7 @@ interface Props {
 const { width } = Dimensions.get('window');
 
 export const WritingPracticeFlashcardView = ({ hskLevel, topic, onBack, onFinishFlashcards }: Props) => {
+  const { colors } = useTheme();
   const [words, setWords] = useState<WritingPracticeWord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [session, dispatch] = useReducer(flashcardSessionReducer, [], createFlashcardSession);
@@ -118,7 +119,7 @@ export const WritingPracticeFlashcardView = ({ hskLevel, topic, onBack, onFinish
     return (
       <SafeAreaView onTouchStart={studyTimer.markActivity} onTouchMove={studyTimer.markActivity} style={{ flex: 1, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center' }}>
         <Text style={{ fontSize: ms(16), color: '#4B5563', marginBottom: vs(16) }}>Không có từ vựng nào.</Text>
-        <TouchableOpacity onPress={onBack} style={{ padding: ms(12), backgroundColor: '#1E3A8A', borderRadius: ms(8) }}>
+        <TouchableOpacity onPress={onBack} style={{ padding: ms(12), backgroundColor: colors.primaryAction, borderRadius: ms(8) }}>
           <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Quay lại</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -186,7 +187,7 @@ export const WritingPracticeFlashcardView = ({ hskLevel, topic, onBack, onFinish
         {/* Action Buttons */}
         <View style={{ flexDirection: 'row', gap: hs(16), marginBottom: vs(32) }}>
           {isComplete ? (
-            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#3B82F6' }]} onPress={() => {
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primaryAction }]} onPress={() => {
               lastRating.current = null;
               dispatch({ type: 'reset', wordIds: session.wordIds });
               setShowMeaning(false);
@@ -200,7 +201,7 @@ export const WritingPracticeFlashcardView = ({ hskLevel, topic, onBack, onFinish
           )}
 
           {isComplete ? (
-            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#10B981' }]} onPress={finishFlashcards}>
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primaryAction }]} onPress={finishFlashcards}>
               <Text style={{ color: '#FFFFFF', fontSize: ms(16), fontWeight: '700' }}>Tập viết ngay</Text>
             </TouchableOpacity>
           ) : (

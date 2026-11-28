@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleProp, ViewStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { ms, hs, vs } from '@/theme';
+import { ms, hs, vs, useTheme } from '@/theme';
 
 export interface PracticeResultCardProps {
   score: number | string;
@@ -26,6 +26,7 @@ export const PracticeResultCard = ({
   retakeButtonText = 'Làm lại',
   containerStyle,
 }: PracticeResultCardProps) => {
+  const { colors } = useTheme();
   return (
     <View
       style={[
@@ -107,7 +108,7 @@ export const PracticeResultCard = ({
           onPress={onRetake}
           style={{
             flex: 1,
-            backgroundColor: '#1E3A8A',
+            backgroundColor: colors.primaryAction,
             borderRadius: ms(8),
             paddingVertical: vs(12),
             alignItems: 'center',

@@ -12,7 +12,7 @@ interface HomeLeaderboardCardProps {
 const RANK_COLORS = ['#F5A623', '#7E57C2', '#FF7043'];
 
 export const HomeLeaderboardCard = ({ onSeeAll }: HomeLeaderboardCardProps) => {
-  const { layout } = useTheme();
+  const { colors, layout } = useTheme();
   const { data: profile } = useProfile();
   const { data, isLoading, isError, refetch } = useExperienceLeaderboard();
 
@@ -65,7 +65,7 @@ export const HomeLeaderboardCard = ({ onSeeAll }: HomeLeaderboardCardProps) => {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity activeOpacity={0.7} onPress={onSeeAll}>
-            <Text style={{ color: '#1F4086', fontSize: ms(14), fontWeight: '700' }}>
+            <Text style={{ color: colors.primaryAction, fontSize: ms(14), fontWeight: '700' }}>
               Xem tất cả {'>'}
             </Text>
           </TouchableOpacity>

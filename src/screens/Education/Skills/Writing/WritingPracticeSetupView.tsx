@@ -4,7 +4,7 @@ import { AppAlert } from '@/services/feedback/appAlert';
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/molecules';
-import { ms, hs, vs } from '@/theme';
+import { ms, hs, vs, useTheme } from '@/theme';
 import { HskLevelSelector, TopicPickerModal } from '../components';
 import { vocabularyApi } from '@/services/vocabulary/api';
 
@@ -22,6 +22,7 @@ interface Props {
 }
 
 export const WritingPracticeSetupView = ({ hskLevel, onSelectHsk, onBack, onStart }: Props) => {
+  const { colors } = useTheme();
   const [topics, setTopics] = useState<WritingPracticeTopic[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<WritingPracticeTopic | null>(null);
 
@@ -82,7 +83,7 @@ export const WritingPracticeSetupView = ({ hskLevel, onSelectHsk, onBack, onStar
           onPress={() => selectedTopic && onStart(hskLevel, selectedTopic.id)}
           disabled={!selectedTopic}
           style={{
-            backgroundColor: selectedTopic ? '#1E3A8A' : '#9CA3AF',
+            backgroundColor: selectedTopic ? colors.primaryAction : '#9CA3AF',
             borderRadius: ms(8),
             paddingVertical: vs(14),
             flexDirection: 'row',

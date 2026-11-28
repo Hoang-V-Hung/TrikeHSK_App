@@ -1,13 +1,14 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { hs, vs, ms } from '@/theme';
+import { hs, vs, ms, useTheme } from '@/theme';
 
 interface GameMatchCardProps {
   onSearch?: () => void;
 }
 
 export const GameMatchCard = ({ onSearch }: GameMatchCardProps) => {
+  const { colors } = useTheme();
   return (
     <View style={{ alignItems: 'center', marginBottom: vs(24) }}>
       <Text style={{ fontSize: ms(28), fontWeight: '800', color: '#111827', marginBottom: vs(20) }}>
@@ -17,7 +18,7 @@ export const GameMatchCard = ({ onSearch }: GameMatchCardProps) => {
         activeOpacity={0.8}
         onPress={onSearch}
         style={{
-          backgroundColor: '#1F4086',
+          backgroundColor: colors.primaryAction,
           borderRadius: ms(999),
           paddingHorizontal: hs(40),
           paddingVertical: vs(16),

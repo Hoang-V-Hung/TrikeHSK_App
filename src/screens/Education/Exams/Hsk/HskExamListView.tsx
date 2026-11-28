@@ -245,7 +245,7 @@ export const HskExamListView = ({ hskLevel, onBack, onSelectExam, examResults, o
 
               <TouchableOpacity
                 style={{
-                  backgroundColor: colors.dialogAction,
+                  backgroundColor: colors.primaryAction,
                   borderRadius: ms(8),
                   paddingVertical: vs(14),
                   alignItems: 'center'

@@ -339,8 +339,8 @@ const createStyles = (colors: Colors) =>
       justifyContent: 'center',
     },
     primaryButton: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
+      backgroundColor: colors.primaryAction,
+      borderColor: colors.primaryAction,
       marginBottom: vs(12),
     },
     secondaryButton: {

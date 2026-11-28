@@ -305,7 +305,7 @@ export const HskExamTestView = ({ examId, durationMin, onBack, onSubmit, isRevie
                 <Text style={{ fontSize: ms(14), color: '#6B7280', fontWeight: '500', marginBottom: vs(16) }}>
                   Đúng <Text style={{ fontWeight: '800', color: '#111827' }}>{questions.filter(q => isExamAnswerCorrect(q, answers[q.id])).length}</Text>/{questions.filter(q => !q.requiresManualReview).length} câu chấm tự động.
                 </Text>
-                <TouchableOpacity onPress={onBack} style={{ backgroundColor: '#1E3A8A', borderRadius: ms(8), paddingVertical: vs(12), paddingHorizontal: hs(36) }}>
+                <TouchableOpacity onPress={onBack} style={{ backgroundColor: colors.primaryAction, borderRadius: ms(8), paddingVertical: vs(12), paddingHorizontal: hs(36) }}>
                   <Text style={{ color: '#FFFFFF', fontSize: ms(16), fontWeight: '700' }}>Về trang kết quả</Text>
                 </TouchableOpacity>
               </>
@@ -314,7 +314,7 @@ export const HskExamTestView = ({ examId, durationMin, onBack, onSubmit, isRevie
                 <Text style={{ fontSize: ms(14), color: '#6B7280', marginBottom: vs(16), fontWeight: '500' }}>
                   Đã trả lời <Text style={{ fontWeight: '800', color: '#111827' }}>{answeredCount}</Text>/{totalCount} câu. Còn {remainingCount} chưa trả lời
                 </Text>
-                <TouchableOpacity onPress={() => setShowSubmitModal(true)} style={{ backgroundColor: '#1E3A8A', borderRadius: ms(8), paddingVertical: vs(12), paddingHorizontal: hs(36) }}>
+                <TouchableOpacity onPress={() => setShowSubmitModal(true)} style={{ backgroundColor: colors.primaryAction, borderRadius: ms(8), paddingVertical: vs(12), paddingHorizontal: hs(36) }}>
                   <Text style={{ color: '#FFFFFF', fontSize: ms(16), fontWeight: '700' }}>Nộp bài</Text>
                 </TouchableOpacity>
               </>

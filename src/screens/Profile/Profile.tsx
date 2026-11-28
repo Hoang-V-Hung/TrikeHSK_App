@@ -35,6 +35,7 @@ import {
 } from '@/services/auth/useAuth';
 
 export function ProfileContent({ onLogout }: { onLogout?: () => void }) {
+  const { colors } = useTheme();
   const scroll = useRef<ScrollView>(null);
   useScrollToTop(scroll);
   const { data: profile } = useProfile();
@@ -178,7 +179,7 @@ export function ProfileContent({ onLogout }: { onLogout?: () => void }) {
           onPress={handleLogout}
           style={{
             alignItems: 'center',
-            backgroundColor: '#0E84F2',
+            backgroundColor: colors.primaryAction,
             borderRadius: ms(24),
             flexDirection: 'row',
             justifyContent: 'center',

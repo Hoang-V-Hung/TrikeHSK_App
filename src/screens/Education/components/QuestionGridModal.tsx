@@ -195,7 +195,7 @@ export const QuestionGridModal: React.FC<QuestionGridModalProps> = ({
                         style={{
                           fontSize: ms(16),
                           fontWeight: '700',
-                          color: colors.dialogAction,
+                          color: colors.primaryAction,
                           marginBottom: vs(12),
                           borderLeftWidth: 3,
                           borderLeftColor: colors.dialogAction,
@@ -290,7 +290,7 @@ export const QuestionGridModal: React.FC<QuestionGridModalProps> = ({
                           backgroundColor: colors.dialogAction,
                         }}
                       />
-                      <Text style={{ fontSize: ms(14), color: colors.dialogAction, fontWeight: '600' }}>
+                      <Text style={{ fontSize: ms(14), color: colors.primaryAction, fontWeight: '600' }}>
                         Đã trả lời
                       </Text>
                     </View>
@@ -303,7 +303,7 @@ export const QuestionGridModal: React.FC<QuestionGridModalProps> = ({
                           backgroundColor: colors.gray50,
                         }}
                       />
-                      <Text style={{ fontSize: ms(14), color: colors.dialogAction, fontWeight: '600' }}>
+                      <Text style={{ fontSize: ms(14), color: colors.primaryAction, fontWeight: '600' }}>
                         Chưa trả lời
                       </Text>
                     </View>
@@ -318,7 +318,7 @@ export const QuestionGridModal: React.FC<QuestionGridModalProps> = ({
                           borderColor: colors.dialogAction,
                         }}
                       />
-                      <Text style={{ fontSize: ms(14), color: colors.dialogAction, fontWeight: '600' }}>
+                      <Text style={{ fontSize: ms(14), color: colors.primaryAction, fontWeight: '600' }}>
                         Đang học
                       </Text>
                     </View>
@@ -331,7 +331,7 @@ export const QuestionGridModal: React.FC<QuestionGridModalProps> = ({
                           backgroundColor: colors.warningText,
                         }}
                       />
-                      <Text style={{ fontSize: ms(14), color: colors.dialogAction, fontWeight: '600' }}>
+                      <Text style={{ fontSize: ms(14), color: colors.primaryAction, fontWeight: '600' }}>
                         Đã đánh dấu
                       </Text>
                     </View>

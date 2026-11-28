@@ -8,7 +8,7 @@ import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from 'react-na
 import { AppAlert } from '@/services/feedback/appAlert';
 import Svg, { Path } from 'react-native-svg';
 import { WebView } from 'react-native-webview';
-import { ms, hs, vs } from '@/theme';
+import { ms, hs, vs, useTheme } from '@/theme';
 import { SubmitConfirmModal, QuestionGridModal } from '@/screens/Education/components';
 import { vocabularyApi } from '@/services/vocabulary';
 import { recordVocabularyProgress } from '@/services/analytics/recording';
@@ -33,6 +33,7 @@ interface Props {
 }
 
 export const WritingPracticeView = ({ hskLevel, topic, wordOrder, onBack, onSubmit }: Props) => {
+  const { colors } = useTheme();
   const [words, setWords] = useState<WritingPracticeWord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -215,7 +216,7 @@ export const WritingPracticeView = ({ hskLevel, topic, wordOrder, onBack, onSubm
     return (
       <SafeAreaView onTouchStart={studyTimer.markActivity} onTouchMove={studyTimer.markActivity} style={{ flex: 1, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center' }}>
         <Text style={{ fontSize: ms(16), color: '#4B5563', marginBottom: vs(16) }}>Không có từ vựng nào trong chủ đề này.</Text>
-        <TouchableOpacity onPress={onBack} style={{ padding: ms(12), backgroundColor: '#1E3A8A', borderRadius: ms(8) }}>
+        <TouchableOpacity onPress={onBack} style={{ padding: ms(12), backgroundColor: colors.primaryAction, borderRadius: ms(8) }}>
           <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Quay lại</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -313,7 +314,7 @@ export const WritingPracticeView = ({ hskLevel, topic, wordOrder, onBack, onSubm
         <TouchableOpacity
           onPress={handleNext}
           disabled={currentIndex === words.length - 1}
-          style={{ flex: 1, paddingVertical: vs(12), alignItems: 'center', borderRadius: ms(8), backgroundColor: '#1E3A8A', marginLeft: hs(8), opacity: currentIndex === words.length - 1 ? 0.5 : 1 }}
+          style={{ flex: 1, paddingVertical: vs(12), alignItems: 'center', borderRadius: ms(8), backgroundColor: colors.primaryAction, marginLeft: hs(8), opacity: currentIndex === words.length - 1 ? 0.5 : 1 }}
         >
           <Text style={{ color: '#FFFFFF', fontSize: ms(16), fontWeight: '700' }}>Câu tiếp</Text>
         </TouchableOpacity>

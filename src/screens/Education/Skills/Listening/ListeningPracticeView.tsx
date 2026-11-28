@@ -15,7 +15,7 @@ import { AppAlert } from '@/services/feedback/appAlert';
 import { ListeningQuestionCard } from './ListeningQuestionCard';
 import { ReadingPracticeImage } from '../Reading/ReadingPracticeImage';
 import { ListeningPracticeQuestion, ListeningPracticeOption } from '../../types';
-import { ms, hs, vs } from '@/theme';
+import { ms, hs, vs, useTheme } from '@/theme';
 import { SubmitConfirmModal, QuestionGridModal } from '@/screens/Education/components';
 
 interface Props {
@@ -183,6 +183,7 @@ import { OfflineUnavailableError } from '@/services/offline/transport';
 import { transformQuestionToListening } from '@/services/education/transformers';
 
 export const ListeningPracticeView = ({ hskLevel, practiceSetId, onBack, onSubmit }: Props) => {
+  const { colors } = useTheme();
   const [questions, setQuestions] = useState<ListeningPracticeQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sourceVersion, setSourceVersion] = useState('');
@@ -353,7 +354,7 @@ export const ListeningPracticeView = ({ hskLevel, practiceSetId, onBack, onSubmi
     return (
       <SafeAreaView onTouchStart={studyTimer.markActivity} onTouchMove={studyTimer.markActivity} style={{ flex: 1, backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center' }}>
         <Text style={{ fontSize: ms(16), color: '#4B5563', marginBottom: vs(16) }}>Không có câu hỏi nào.</Text>
-        <TouchableOpacity onPress={onBack} style={{ padding: ms(12), backgroundColor: '#1E3A8A', borderRadius: ms(8) }}>
+        <TouchableOpacity onPress={onBack} style={{ padding: ms(12), backgroundColor: colors.primaryAction, borderRadius: ms(8) }}>
           <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Quay lại</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -396,7 +397,7 @@ export const ListeningPracticeView = ({ hskLevel, practiceSetId, onBack, onSubmi
             <Text style={{ fontSize: ms(14), color: '#6B7280', marginBottom: vs(16), fontWeight: '500' }}>
               Đã làm <Text style={{ fontWeight: '800', color: '#111827' }}>{answeredCount}</Text>/{totalCount} {isManualOnly ? 'mục' : 'câu'}. Còn {remainingCount} chưa làm
             </Text>
-            <TouchableOpacity onPress={() => setShowSubmitModal(true)} style={{ backgroundColor: '#1E3A8A', borderRadius: ms(8), paddingHorizontal: hs(36), paddingVertical: vs(12) }}>
+            <TouchableOpacity onPress={() => setShowSubmitModal(true)} style={{ backgroundColor: colors.primaryAction, borderRadius: ms(8), paddingHorizontal: hs(36), paddingVertical: vs(12) }}>
               <Text style={{ color: '#FFFFFF', fontSize: ms(16), fontWeight: '700' }}>{submitLabel}</Text>
             </TouchableOpacity>
           </View>

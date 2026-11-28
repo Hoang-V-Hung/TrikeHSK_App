@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/molecules';
-import { ms, hs, vs } from '@/theme';
+import { ms, hs, vs, useTheme } from '@/theme';
 import { HskLevelSelector, PracticeTopicPicker } from '../components';
 
 import { educationApi } from '@/services/education/api';
@@ -17,6 +17,7 @@ interface Props {
 }
 
 export const SpeakingPracticeSetupView = ({ hskLevel, onSelectHsk, onBack, onStartPractice }: Props) => {
+  const { colors } = useTheme();
   const [topics, setTopics] = useState<SkillTopicSummary[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<string>('');
 
@@ -76,7 +77,7 @@ export const SpeakingPracticeSetupView = ({ hskLevel, onSelectHsk, onBack, onSta
           disabled={!canStart}
           onPress={() => canStart && onStartPractice(hskLevel, selectedTopic)}
           style={{
-            backgroundColor: canStart ? '#1E3A8A' : '#9CA3AF',
+            backgroundColor: canStart ? colors.primaryAction : '#9CA3AF',
             borderRadius: ms(8),
             paddingVertical: vs(14),
             flexDirection: 'row',

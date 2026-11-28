@@ -79,7 +79,7 @@ export const HskExamResultView = ({ result: initialResult, onBack, onReview, onR
           )}
 
           <View style={{ flexDirection: 'row', gap: hs(12), marginBottom: vs(12) }}>
-            <TouchableOpacity onPress={onReview} style={{ flex: 2, backgroundColor: '#1E3A8A', borderRadius: ms(8), paddingVertical: vs(12), flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+            <TouchableOpacity onPress={onReview} style={{ flex: 2, backgroundColor: colors.primaryAction, borderRadius: ms(8), paddingVertical: vs(12), flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
               <Svg height={ms(16)} viewBox="0 0 24 24" width={ms(16)} style={{ marginRight: hs(8) }}>
                 <Path d="M3 3h18v18H3V3zm16 16V5H5v14h14zM7 7h10v2H7V7zm0 4h10v2H7v-2zm0 4h7v2H7v-2z" fill="#FFFFFF" />
               </Svg>

@@ -67,7 +67,7 @@ export const GameMatchingView = ({ onCancel, state, onReady }: GameMatchingViewP
             accessibilityRole="button"
             accessibilityLabel={readyBusy ? 'Đang xác nhận sẵn sàng' : myReady ? 'Đang chờ đối thủ' : 'Sẵn sàng vào trận'}
             accessibilityState={{ disabled: myReady || readyBusy, busy: readyBusy }}
-            style={{ minHeight: vs(52), backgroundColor: myReady ? colors.gray50 : '#1F4086', marginBottom: vs(12) }}
+            style={{ minHeight: vs(52), backgroundColor: myReady ? colors.gray50 : colors.primaryAction, marginBottom: vs(12) }}
           />
         )}
         <Button
@@ -76,7 +76,7 @@ export const GameMatchingView = ({ onCancel, state, onReady }: GameMatchingViewP
           variant={failed ? 'primary' : 'outline'}
           fullWidth
           accessibilityRole="button"
-          style={{ minHeight: vs(52), ...(failed ? { backgroundColor: '#1F4086' } : { borderColor: colors.gray100 }) }}
+          style={{ minHeight: vs(52), ...(failed ? { backgroundColor: colors.primaryAction } : { borderColor: colors.gray100 }) }}
         />
       </ScrollView>
     </SafeAreaView>

@@ -127,10 +127,10 @@ export default function ConfirmationDialog({
                     alignItems: 'center',
                     backgroundColor: button.secondary
                       ? colors.dialogBackground
-                      : colors.dialogAction,
+                      : colors.primaryAction,
                     borderColor: button.secondary
                       ? colors.dialogBorder
-                      : colors.dialogAction,
+                      : colors.primaryAction,
                     borderWidth: 1,
                     borderRadius: ms(12),
                     flex: stacked ? undefined : 1,

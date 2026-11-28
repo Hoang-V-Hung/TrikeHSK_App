@@ -9,7 +9,7 @@ import { AppAlert } from '@/services/feedback/appAlert';
 import { useScreenBackHandler } from '@/navigation/useScreenBackHandler';
 import Svg, { Path } from 'react-native-svg';
 import { ReadingPracticeQuestion } from '../../types';
-import { ms, hs, vs } from '@/theme';
+import { ms, hs, vs, useTheme } from '@/theme';
 import { SubmitConfirmModal, QuestionGridModal } from '@/screens/Education/components';
 import { ReadingPracticeImage } from './ReadingPracticeImage';
 
@@ -326,6 +326,7 @@ import { OfflineUnavailableError } from '@/services/offline/transport';
 import { transformQuestionToReading } from '@/services/education/transformers';
 
 const ReadingPracticeSession = ({ hskLevel, practiceSetId, onBack, onSubmit }: Props) => {
+  const { colors } = useTheme();
   const [questions, setQuestions] = useState<ReadingPracticeQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sourceVersion, setSourceVersion] = useState('');
@@ -476,7 +477,7 @@ const ReadingPracticeSession = ({ hskLevel, practiceSetId, onBack, onSubmit }: P
     return (
       <SafeAreaView onTouchStart={studyTimer.markActivity} onTouchMove={studyTimer.markActivity} style={{ flex: 1, backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center' }}>
         <Text style={{ fontSize: ms(16), color: '#4B5563', marginBottom: vs(16) }}>Không có câu hỏi nào.</Text>
-        <TouchableOpacity onPress={onBack} style={{ padding: ms(12), backgroundColor: '#1E3A8A', borderRadius: ms(8) }}>
+        <TouchableOpacity onPress={onBack} style={{ padding: ms(12), backgroundColor: colors.primaryAction, borderRadius: ms(8) }}>
           <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Quay lại</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -532,7 +533,7 @@ const ReadingPracticeSession = ({ hskLevel, practiceSetId, onBack, onSubmit }: P
             <Text style={{ fontSize: ms(14), color: '#6B7280', marginBottom: vs(16), fontWeight: '500' }}>
               Đã trả lời <Text style={{ fontWeight: '800', color: '#111827' }}>{answeredCount}</Text>/{totalCount} {countUnit}. Còn {remainingCount} chưa trả lời
             </Text>
-            <TouchableOpacity onPress={() => setShowSubmitModal(true)} style={{ backgroundColor: '#1E3A8A', borderRadius: ms(8), paddingHorizontal: hs(32), paddingVertical: vs(12) }}>
+            <TouchableOpacity onPress={() => setShowSubmitModal(true)} style={{ backgroundColor: colors.primaryAction, borderRadius: ms(8), paddingHorizontal: hs(32), paddingVertical: vs(12) }}>
               <Text style={{ color: '#FFFFFF', fontSize: ms(16), fontWeight: '700' }}>{submitLabel}</Text>
             </TouchableOpacity>
           </View>

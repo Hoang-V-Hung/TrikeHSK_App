@@ -4,7 +4,7 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/molecules';
-import { ms, hs, vs } from '@/theme';
+import { ms, hs, vs, useTheme } from '@/theme';
 import { HskLevelSelector, TopicPickerModal } from '../components';
 
 import { educationApi } from '@/services/education/api';
@@ -24,6 +24,7 @@ interface Props {
 }
 
 export const ListeningPracticeSetupView = ({ onBack, onStartPractice }: Props) => {
+  const { colors } = useTheme();
   const [selectedHsk, setSelectedHsk] = useState<number>(1);
   const [practiceSets, setPracticeSets] = useState<SkillPracticeSetSummary[]>([]);
   const [selectedSetId, setSelectedSetId] = useState<number | null>(null);
@@ -88,7 +89,7 @@ export const ListeningPracticeSetupView = ({ onBack, onStartPractice }: Props) =
           disabled={!selectedSet?.questionCount}
           onPress={() => selectedSet?.questionCount && onStartPractice(selectedSet.hskLevel, selectedSet.id)}
           style={{
-            backgroundColor: '#1E3A8A',
+            backgroundColor: colors.primaryAction,
             borderRadius: ms(8),
             paddingVertical: vs(14),
             flexDirection: 'row',

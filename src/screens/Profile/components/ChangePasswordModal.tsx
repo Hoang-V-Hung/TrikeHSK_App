@@ -139,7 +139,7 @@ export function ChangePasswordModal({ isSaving, onClose, onSubmit }: ChangePassw
             <InputError message={errors.form} />
             <View style={{ flexDirection: 'row', gap: hs(10) }}>
               <Button accessibilityRole="button" disabled={pending} onPress={handleClose} title="Hủy" variant="outline" textColor={colors.dialogText} style={{ flex: 1, borderRadius: ms(12), borderColor: colors.dialogBorder }} />
-              <Button accessibilityLabel="Lưu mật khẩu mới" accessibilityRole="button" loading={pending} onPress={handleSubmit} title="Lưu mật khẩu" style={{ flex: 1, borderRadius: ms(12), backgroundColor: colors.dialogAction }} />
+              <Button accessibilityLabel="Lưu mật khẩu mới" accessibilityRole="button" loading={pending} onPress={handleSubmit} title="Lưu mật khẩu" style={{ flex: 1, borderRadius: ms(12) }} />
             </View>
           </View>
         </ScrollView>

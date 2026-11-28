@@ -8,7 +8,7 @@ interface ContinueLearningCardProps {
 }
 
 export const ContinueLearningCard = ({ onContinue }: ContinueLearningCardProps) => {
-  const { layout } = useTheme();
+  const { colors, layout } = useTheme();
 
   return (
     <View style={{ paddingHorizontal: hs(16), marginBottom: vs(16) }}>
@@ -64,7 +64,7 @@ export const ContinueLearningCard = ({ onContinue }: ContinueLearningCardProps) 
           style={{
             alignItems: 'center',
             alignSelf: 'center',
-            backgroundColor: '#1F4086',
+            backgroundColor: colors.primaryAction,
             borderRadius: ms(999),
             flexDirection: 'row',
             justifyContent: 'center',
