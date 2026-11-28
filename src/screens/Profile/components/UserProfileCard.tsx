@@ -3,15 +3,10 @@ import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { UserAvatar } from '@/components/atoms';
 import { useTheme, hs, vs, ms } from '@/theme';
-import InputError from '@/components/atoms/InputError';
 
 interface UserProfileCardProps {
   displayName: string;
-  displayNameError?: string;
-  setDisplayName: (name: string) => void;
   email: string;
-  onSave?: () => void;
-  isSaving?: boolean;
   photoUrl?: string | null;
   isUpdatingPhoto?: boolean;
   onChangePhoto?: () => void;
@@ -21,18 +16,14 @@ interface UserProfileCardProps {
 
 export function UserProfileCard({
   displayName,
-  displayNameError,
-  setDisplayName,
   email,
-  onSave,
-  isSaving = false,
   photoUrl,
   isUpdatingPhoto = false,
   onChangePhoto,
   onDeletePhoto,
   onChangePassword,
 }: UserProfileCardProps) {
-  const { colors, layout } = useTheme();
+  const { layout } = useTheme();
 
   return (
     <View
@@ -142,87 +133,35 @@ export function UserProfileCard({
         </Text>
       </View>
 
-      {/* Input: Tên hiển thị */}
-      <View style={{ marginBottom: vs(12) }}>
-        <Text
-          style={{
-            color: '#000000',
-            fontSize: ms(16),
-            fontWeight: '600',
-            marginBottom: vs(6),
-          }}
-        >
-          Tên hiển thị
-        </Text>
-        <TextInput
-          accessibilityLabel="Tên hiển thị"
-          accessibilityHint={displayNameError}
-          onChangeText={setDisplayName}
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderColor: displayNameError ? colors.red500 : '#E5E7EB',
-            borderRadius: ms(8),
-            borderWidth: 1,
-            color: '#000000',
-            fontSize: ms(14),
-            paddingHorizontal: hs(12),
-            paddingVertical: vs(9),
-          }}
-          value={displayName}
-        />
-        <InputError message={displayNameError} />
-      </View>
-
-      {/* Input: Email */}
-      <View style={{ marginBottom: vs(16) }}>
-        <Text
-          style={{
-            color: '#000000',
-            fontSize: ms(16),
-            fontWeight: '600',
-            marginBottom: vs(6),
-          }}
-        >
-          Email
-        </Text>
-        <TextInput
-          editable={false}
-          style={{
-            backgroundColor: '#F9FAFB',
-            borderColor: '#E5E7EB',
-            borderRadius: ms(8),
-            borderWidth: 1,
-            color: '#9CA3AF',
-            fontSize: ms(14),
-            paddingHorizontal: hs(12),
-            paddingVertical: vs(9),
-          }}
-          value={email}
-        />
-      </View>
+      {[
+        { label: 'Tên hiển thị', value: displayName },
+        { label: 'Email', value: email },
+      ].map(({ label, value }) => (
+        <View key={label} style={{ marginBottom: vs(12) }}>
+          <Text style={{ color: '#000000', fontSize: ms(16), fontWeight: '600', marginBottom: vs(6) }}>
+            {label}
+          </Text>
+          <TextInput
+            accessibilityLabel={label}
+            accessibilityState={{ disabled: true }}
+            editable={false}
+            style={{
+              backgroundColor: '#F9FAFB',
+              borderColor: '#E5E7EB',
+              borderRadius: ms(8),
+              borderWidth: 1,
+              color: '#4B5563',
+              fontSize: ms(14),
+              paddingHorizontal: hs(12),
+              paddingVertical: vs(9),
+            }}
+            value={value}
+          />
+        </View>
+      ))}
 
       {/* Bottom Actions Row */}
       <View style={[layout.row, { columnGap: hs(10) }]}>
-        {/* Save Changes Button */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          disabled={isSaving}
-          onPress={onSave}
-          style={{
-            alignItems: 'center',
-            backgroundColor: '#1E3A8A',
-            borderRadius: ms(8),
-            justifyContent: 'center',
-            paddingHorizontal: hs(18),
-            paddingVertical: vs(10),
-            opacity: isSaving ? 0.7 : 1,
-          }}
-        >
-          <Text style={{ color: '#FFFFFF', fontSize: ms(14), fontWeight: '700' }}>
-            {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
-          </Text>
-        </TouchableOpacity>
-
         {/* Change Password Button */}
         <TouchableOpacity
           activeOpacity={0.8}

@@ -65,7 +65,10 @@ export const transformSectionQuestionToExamQuestion = (
   };
 };
 
-export const transformBackendExamToApp = (backendExam: BackendExam): HskExam => {
+export const transformBackendExamToApp = (
+  backendExam: BackendExam,
+  summaryOnly = false,
+): HskExam => {
   const sections = backendExam.sections || [];
 
   let listeningCount = 0;
@@ -77,6 +80,15 @@ export const transformBackendExamToApp = (backendExam: BackendExam): HskExam => 
   let questionIndex = 1;
   [...sections].sort((a, b) => a.order - b.order).forEach((sec) => {
     const secQuestions = [...(sec.sectionQuestions || [])].sort((a, b) => a.order - b.order);
+    if (summaryOnly) {
+      const count = sec.questionCount ?? secQuestions.length;
+      const skill = sec.skill ?? secQuestions.find((link) => link.question)?.question?.skill;
+      if (skill === 'LISTENING') listeningCount += count;
+      if (skill === 'READING') readingCount += count;
+      if (skill === 'WRITING') writingCount += count;
+      if (skill === 'SPEAKING') unsupportedSkills.add(skill);
+      return;
+    }
     secQuestions.forEach((sq) => {
       if (!sq.question) throw new Error('Đề thi có câu hỏi chưa được tải đầy đủ.');
       if (sq.question.skill !== 'LISTENING' && sq.question.skill !== 'READING' && sq.question.skill !== 'WRITING') {
@@ -116,6 +128,11 @@ export const transformBackendExamToApp = (backendExam: BackendExam): HskExam => 
     level: backendExam.hskLevel,
     name: backendExam.title,
     timeLimit: standardTimeLimits[backendExam.hskLevel] ?? 40,
+    totalQuestions: backendExam.totalQuestions ?? sections.reduce(
+      (sum, section) => sum + (section.questionCount ?? section.sectionQuestions?.length ?? 0),
+      0,
+    ),
+    canAttempt: backendExam.access?.canAttempt,
     listeningCount,
     readingCount,
     writingCount,

@@ -1,4 +1,3 @@
-import { useOfflineLesson } from '@/services/offline/useOffline';
 // @refresh reset
 import { readLearningDraft, clearLearningDraft, useLearningDraft } from '@/services/offline/drafts';
 import { PracticeBookmarkButton } from '../../components/PracticeBookmarkButton';
@@ -323,11 +322,11 @@ const ReadingQuestionCard = React.memo(({ question, instructionGroup, isGroupSta
 });
 
 import { educationApi } from '@/services/education/api';
+import { OfflineUnavailableError } from '@/services/offline/transport';
 import { transformQuestionToReading } from '@/services/education/transformers';
 
 const ReadingPracticeSession = ({ hskLevel, practiceSetId, onBack, onSubmit }: Props) => {
   const [questions, setQuestions] = useState<ReadingPracticeQuestion[]>([]);
-  useOfflineLesson(questions);
   const [isLoading, setIsLoading] = useState(true);
   const [sourceVersion, setSourceVersion] = useState('');
   const draftKey = `reading:${practiceSetId}`;
@@ -340,7 +339,7 @@ const ReadingPracticeSession = ({ hskLevel, practiceSetId, onBack, onSubmit }: P
     const fetchQuestions = async () => {
       try {
         setIsLoading(true);
-        const set = await educationApi.getPracticeSetById(practiceSetId);
+        const set = await educationApi.openPracticeSet(practiceSetId);
         if (set.skill !== 'READING' || set.hskLevel !== hskLevel) {
           throw new Error('The selected set is not a reading set for this HSK level.');
         }
@@ -354,7 +353,10 @@ const ReadingPracticeSession = ({ hskLevel, practiceSetId, onBack, onSubmit }: P
           setSourceVersion(version); setQuestions(mappedQuestions); setAnswers(draft.answers || {}); setBookmarks(draft.bookmarks || {}); setCurrentIndex(Math.min(mappedQuestions.length - 1, draft.currentIndex || 0));
         }
       } catch (err) {
-        if (!cancelled) { setQuestions([]); AppAlert.error('Không thể tải bài luyện', 'Vui lòng kiểm tra kết nối và mở lại bài luyện.'); }
+        if (!cancelled) { setQuestions([]);
+          AppAlert.error('Không thể tải bài luyện', err instanceof OfflineUnavailableError
+            ? err.message
+            : 'Vui lòng kiểm tra kết nối và mở lại bài luyện.'); }
       } finally {
         if (!cancelled) setIsLoading(false);
       }

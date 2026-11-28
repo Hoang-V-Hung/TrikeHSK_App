@@ -25,7 +25,6 @@ import { filesApi } from '@/services/files/api';
 import type { PickedAvatar } from '@/services/files/api';
 import type { ChangePasswordDto } from '@/services/auth/types';
 import { getAuthSessionVersion } from '@/services/storage';
-import { getFormErrors } from '@/services/auth/formErrors';
 
 import {
   useLogout,
@@ -44,14 +43,11 @@ export function ProfileContent({ onLogout }: { onLogout?: () => void }) {
   const logoutMutation = useLogout();
   const changePasswordMutation = useChangePassword();
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const [displayNameError, setDisplayNameError] = useState<string>();
   const [isUpdatingPhoto, setIsUpdatingPhoto] = useState(false);
   const photoBusy = React.useRef(false);
   const hskBusy = React.useRef(false);
   
-  const [displayName, setDisplayName] = useState(
-    profile?.fullName || profile?.username || 'Người dùng',
-  );
+  const displayName = profile?.fullName || profile?.username || 'Người dùng';
   const email = profile?.email || '';
   const [currentHskLevel, setCurrentHskLevel] = useState(profile?.currentHskLevel || 1);
   const [showPinyin, setShowPinyin] = useState(true);
@@ -60,31 +56,9 @@ export function ProfileContent({ onLogout }: { onLogout?: () => void }) {
   // Sync state when profile data loads
   React.useEffect(() => {
     if (profile) {
-      setDisplayName(profile.fullName || profile.username || 'Người dùng');
       setCurrentHskLevel(profile.currentHskLevel || 1);
     }
   }, [profile]);
-
-  const handleSaveProfile = () => {
-    const trimmed = displayName.trim();
-    if (!trimmed) {
-      setDisplayNameError('Tên hiển thị không được để trống.');
-      return;
-    }
-    setDisplayNameError(undefined);
-    updateProfileMutation.mutate(
-      { fullName: trimmed },
-      {
-        onSuccess: () => {
-          AppAlert.success('Thành công', 'Đã cập nhật thông tin tài khoản!');
-        },
-        onError: async (error) => {
-          const errors = await getFormErrors(error, 'Không thể lưu thay đổi. Vui lòng thử lại.');
-          setDisplayNameError(errors.fullName ?? errors.form);
-        },
-      },
-    );
-  };
 
   const handleChangeHskLevel = (newLevel: number) => {
     if (hskBusy.current || newLevel === currentHskLevel) return;
@@ -161,16 +135,12 @@ export function ProfileContent({ onLogout }: { onLogout?: () => void }) {
       <View style={{ paddingHorizontal: hs(16), marginBottom: vs(16) }}>
         <UserProfileCard
           displayName={displayName}
-          displayNameError={displayNameError}
           email={email}
-          isSaving={updateProfileMutation.isPending}
           photoUrl={profile?.photo?.path}
           isUpdatingPhoto={isUpdatingPhoto || updateProfileMutation.isPending}
           onChangePhoto={handleChangePhoto}
           onDeletePhoto={handleDeletePhoto}
           onChangePassword={() => setShowChangePassword(true)}
-          onSave={handleSaveProfile}
-          setDisplayName={value => { setDisplayName(value); setDisplayNameError(undefined); }}
         />
       </View>
 

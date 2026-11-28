@@ -54,7 +54,6 @@ export const BattleScoreBar = ({
           <UserAvatar
             photoUrl={photoUrl}
             size={ms(40)}
-            backgroundColor={colors.accentLightBlue}
             style={{
               marginRight: hs(10),
               borderWidth: 1,

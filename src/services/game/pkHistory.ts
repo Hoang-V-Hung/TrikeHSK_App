@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { instance } from '../instance';
 
 export interface PkHistoryItem {
@@ -31,17 +31,13 @@ export const PK_HISTORY_QUERY_KEYS = {
 
 export const getPkHistory = (page: number = 1): Promise<PkHistoryPage> =>
   instance
-    .get('game/pk/history', { searchParams: { page, limit: 10 } })
+    .get('game/pk/history', { searchParams: { page, limit: 5 } })
     .json<PkHistoryPage>();
 
-export const usePkHistory = (userId: number | undefined, enabled: boolean) =>
-  useInfiniteQuery({
-    queryKey: PK_HISTORY_QUERY_KEYS.user(userId),
-    queryFn: ({ pageParam }) => getPkHistory(pageParam),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) =>
-      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
+export const usePkHistory = (userId: number | undefined, page: number, enabled: boolean) =>
+  useQuery({
+    queryKey: [...PK_HISTORY_QUERY_KEYS.user(userId), page],
+    queryFn: () => getPkHistory(page),
     enabled: enabled && Boolean(userId),
     staleTime: 0,
-    retry: 1,
   });

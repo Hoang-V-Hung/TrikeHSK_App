@@ -1,44 +1,24 @@
-import { Text, View } from 'react-native';
+import { Text } from 'react-native';
 import { ms, useTheme } from '@/theme';
-import { useOffline } from '@/services/offline/useOffline';
-import {
-  accountScope,
-  getPendingEvents,
-  isOffline,
-} from '@/services/offline/store';
-import { isSavingMedia } from '@/services/offline/cache';
-import { isSyncing } from '@/services/offline/sync';
+import { useIsOffline } from '@/services/offline/useOffline';
 
 export default function OfflineStatus() {
-  useOffline();
+  const offline = useIsOffline();
   const { colors } = useTheme();
-  if (!accountScope()) return null;
-  const offline = isOffline();
-  const pending = getPendingEvents().length;
-  if (!offline && !pending && !isSavingMedia()) return null;
+  if (!offline) return null;
   return (
-    <View
+    <Text
       accessibilityLiveRegion="polite"
       style={{
         backgroundColor: colors.secondary,
-        paddingHorizontal: ms(16),
-        paddingVertical: ms(8),
-        borderBottomColor: colors.dialogBorder,
-        borderBottomWidth: 1,
+        color: colors.dialogText,
+        fontSize: ms(12),
+        paddingHorizontal: ms(12),
+        paddingVertical: ms(4),
+        textAlign: 'center',
       }}
     >
-      <Text
-        style={{ color: colors.gray800, fontSize: ms(12), lineHeight: ms(18) }}
-      >
-        {offline
-          ? 'Mất kết nối · đang dùng nội dung đã lưu trên máy'
-          : isSyncing()
-            ? 'Đang đồng bộ tiến độ…'
-            : pending
-              ? 'Tiến độ đang chờ đồng bộ'
-              : 'Đang lưu ảnh và audio của bài vừa mở…'}
-        {pending ? ` · ${pending} mục chưa gửi` : ''}
-      </Text>
-    </View>
+      Bạn đang ngoại tuyến
+    </Text>
   );
 }

@@ -1,4 +1,5 @@
 import { instance } from '../instance';
+import { loadLesson } from '../offline/cache';
 import { educationApi } from '../education/api';
 import {
   Vocabulary,
@@ -32,20 +33,29 @@ export const vocabularyApi = {
   getAllForPractice: async (
     params: Pick<VocabularyQueryParams, 'hskLevel' | 'topic'>,
   ): Promise<Vocabulary[]> => {
-    const words: Vocabulary[] = [];
-    let page = 1;
-    let totalPages = 1;
-    do {
-      const response = await vocabularyApi.getVocabularies({
-        ...params,
-        page,
-        limit: 100,
-      });
-      words.push(...response.data);
-      totalPages = response.totalPages;
-      page += 1;
-    } while (page <= totalPages);
-    return words;
+    const load = async () => {
+      const words: Vocabulary[] = [];
+      let page = 1;
+      let totalPages = 1;
+      do {
+        const response = await vocabularyApi.getVocabularies({
+          ...params,
+          page,
+          limit: 100,
+        });
+        words.push(...response.data);
+        totalPages = response.totalPages;
+        page += 1;
+      } while (page <= totalPages);
+      return words;
+    };
+    return params.topic
+      ? loadLesson(
+          `vocabulary-topic:${JSON.stringify([params.hskLevel, params.topic])}`,
+          load,
+          (words) => words.length > 0,
+        )
+      : load();
   },
 
   getTopicsForWriting: async (

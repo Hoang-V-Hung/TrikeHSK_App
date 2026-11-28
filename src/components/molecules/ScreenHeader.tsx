@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleProp, ViewStyle, TextStyle } from 'react-native';
 import { BackButton } from '@/components/atoms';
-import OfflineStatus from './OfflineStatus';
 import { ms, hs, vs } from '@/theme';
 
 export interface ScreenHeaderProps {
@@ -29,8 +28,6 @@ export const ScreenHeader = ({
 }: ScreenHeaderProps) => {
   const isPage = variant === 'page';
   return (
-    <>
-    <OfflineStatus />
     <View
       style={[
         {
@@ -95,7 +92,6 @@ export const ScreenHeader = ({
         </View>
       ) : null}
     </View>
-    </>
   );
 };
 

@@ -1,7 +1,8 @@
 import { API_BASE_URL } from '../config';
-import { cacheResponse, cachedResponses, readCachedResponse } from './cache';
+import { cacheResponse, cachedLessons, cachedResponses, readCachedResponse } from './cache';
 import type {
   BackendPracticeSet,
+  BackendQuestion,
   BackendTopicSummary,
 } from '../education/types';
 import type { BackendExam } from '../exams/types';
@@ -18,7 +19,7 @@ import {
 export class OfflineUnavailableError extends Error {
   constructor() {
     super(
-      'Bài này chưa được lưu trên máy. Khi có mạng, hãy mở bài hoặc tải trước tại Học & luyện tập.',
+      'Dữ liệu này chưa được lưu trên máy. Hãy kết nối mạng để mở.',
     );
     this.name = 'OfflineUnavailableError';
   }
@@ -41,7 +42,8 @@ export const offlineContent = (url: URL): unknown => {
     (pack) => !level || pack.level === Number(level),
   );
   const recent = cachedResponses();
-  if (!packs.length && !recent.length) return undefined;
+  const opened = cachedLessons();
+  if (!packs.length && !recent.length && !opened.length) return undefined;
   const entities = <T>(name: string): T[] => {
     const path = new URL(API_BASE_URL).pathname + '/' + name;
     const entries = recent.filter((entry) => {
@@ -92,6 +94,11 @@ export const offlineContent = (url: URL): unknown => {
     [
       ...packs.flatMap((pack) => pack.sets),
       ...entities<BackendPracticeSet>('practice-sets'),
+      ...opened.flatMap((entry) =>
+        entry.key.startsWith('set:') || entry.key.startsWith('practice-topic:')
+          ? (entry.body as BackendPracticeSet | BackendPracticeSet[])
+          : [],
+      ),
     ].sort(
       (a, b) =>
         Number(!!a.practiceSetQuestions?.length) -
@@ -101,11 +108,17 @@ export const offlineContent = (url: URL): unknown => {
   const words = unique([
     ...packs.flatMap((pack) => pack.words),
     ...entities<Vocabulary>('vocabulary'),
+    ...opened.flatMap((entry) =>
+      entry.key.startsWith('vocabulary-topic:') ? (entry.body as Vocabulary[]) : [],
+    ),
   ]);
   const exams = unique(
     [
       ...packs.flatMap((pack) => pack.exams),
       ...entities<BackendExam>('exams'),
+      ...opened.flatMap((entry) =>
+        entry.key.startsWith('exam:') ? [entry.body as BackendExam] : [],
+      ),
     ].sort(
       (a, b) => Number(!!a.sections?.length) - Number(!!b.sections?.length),
     ),
@@ -141,11 +154,14 @@ export const offlineContent = (url: URL): unknown => {
   if (/^exams\/\d+$/.test(route))
     return exams.find((exam) => exam.id === Number(route.split('/')[1]));
   if (route === 'questions')
-    return paginate(filter(unique(packs.flatMap((pack) => pack.questions))));
+    return paginate(filter(unique([
+      ...packs.flatMap((pack) => pack.questions),
+      ...entities<BackendQuestion>('questions'),
+    ])));
   return undefined;
 };
 const cacheable = (route: string) =>
-  /^(auth\/me|analytics\/dashboard|practice-sets(?:\/.*)?|exams(?:\/\d+)?|vocabulary(?:\/.*)?|questions)$/.test(
+  /^(auth\/me|analytics\/dashboard|practice-sets(?:\/.*)?|exams(?:\/\d+)?|vocabulary(?:\/.*)?|questions|leaderboard\/streak|game\/(?:pk\/history|offline\/(?:words|top-scores)))$/.test(
     route,
   );
 const response = (body: unknown) =>

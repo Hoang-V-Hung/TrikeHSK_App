@@ -21,12 +21,9 @@ import { syncOfflineEvents } from './sync';
 
 export const useOffline = () =>
   useSyncExternalStore(subscribeOffline, offlineRevision, offlineRevision);
-export function useOfflineLesson(content: unknown) {
-  useOffline();
-  useEffect(() => {
-    void warmLessonMedia(content);
-  }, [content]);
-}
+export const useIsOffline = () =>
+  useSyncExternalStore(subscribeOffline, isOffline, isOffline);
+
 export function useOfflineRuntime(client: QueryClient) {
   useEffect(() => {
     let alive = true;

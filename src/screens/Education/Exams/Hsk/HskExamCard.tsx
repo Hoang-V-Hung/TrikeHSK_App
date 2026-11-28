@@ -16,6 +16,8 @@ export const HskExamCard = ({ item, onPress, result, onHistoryPress }: Props) =>
   const indexStr = item.name.split('Đề ')[1] || '1';
   const watermarkText = indexStr.padStart(2, '0');
   const isCompleted = !!result;
+  const counted = item.listeningCount + item.readingCount + (item.writingCount ?? 0);
+  const showBreakdown = counted > 0 && (item.totalQuestions === undefined || counted === item.totalQuestions);
 
   const handleCardPress = () => {
     console.log('[HskExamCard] Card pressed:', item.id, item.name);
@@ -61,31 +63,39 @@ export const HskExamCard = ({ item, onPress, result, onHistoryPress }: Props) =>
 
         {/* Bottom Info */}
         <View style={{ gap: vs(8), marginTop: vs(24) }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Svg height={ms(16)} viewBox="0 0 24 24" width={ms(16)} style={{ marginRight: hs(8) }}>
-              <Path d="M3 18v-6a9 9 0 0 1 18 0v6" fill="none" stroke="#EF4444" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-              <Path d="M21 19a2 2 0 0 1-2 2h-1v-4h3v2zM3 19a2 2 0 0 0 2 2h1v-4H3v2z" stroke="#EF4444" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            </Svg>
+          {showBreakdown ? (
+            <>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Svg height={ms(16)} viewBox="0 0 24 24" width={ms(16)} style={{ marginRight: hs(8) }}>
+                  <Path d="M3 18v-6a9 9 0 0 1 18 0v6" fill="none" stroke="#EF4444" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                  <Path d="M21 19a2 2 0 0 1-2 2h-1v-4h3v2zM3 19a2 2 0 0 0 2 2h1v-4H3v2z" stroke="#EF4444" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                </Svg>
+                <Text style={{ fontSize: ms(14), color: '#374151', fontWeight: '600' }}>
+                  {item.listeningCount} câu nghe
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Svg height={ms(16)} viewBox="0 0 24 24" width={ms(16)} style={{ marginRight: hs(8) }}>
+                  <Path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" fill="none" stroke="#EF4444" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                  <Path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" fill="none" stroke="#EF4444" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                </Svg>
+                <Text style={{ fontSize: ms(14), color: '#374151', fontWeight: '600' }}>
+                  {item.readingCount} câu đọc
+                </Text>
+              </View>
+              {!!item.writingCount && (
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Svg height={ms(16)} viewBox="0 0 24 24" width={ms(16)} style={{ marginRight: hs(8) }}>
+                    <Path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" fill="none" stroke="#EF4444" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                  </Svg>
+                  <Text style={{ fontSize: ms(14), color: '#374151', fontWeight: '600' }}>{item.writingCount} câu viết</Text>
+                </View>
+              )}
+            </>
+          ) : (
             <Text style={{ fontSize: ms(14), color: '#374151', fontWeight: '600' }}>
-              {item.listeningCount} câu nghe
+              {item.totalQuestions ?? 0} câu hỏi
             </Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Svg height={ms(16)} viewBox="0 0 24 24" width={ms(16)} style={{ marginRight: hs(8) }}>
-              <Path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" fill="none" stroke="#EF4444" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-              <Path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" fill="none" stroke="#EF4444" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-            </Svg>
-            <Text style={{ fontSize: ms(14), color: '#374151', fontWeight: '600' }}>
-              {item.readingCount} câu đọc
-            </Text>
-          </View>
-          {!!item.writingCount && (
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Svg height={ms(16)} viewBox="0 0 24 24" width={ms(16)} style={{ marginRight: hs(8) }}>
-                <Path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" fill="none" stroke="#EF4444" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-              </Svg>
-              <Text style={{ fontSize: ms(14), color: '#374151', fontWeight: '600' }}>{item.writingCount} câu viết</Text>
-            </View>
           )}
         </View>
 

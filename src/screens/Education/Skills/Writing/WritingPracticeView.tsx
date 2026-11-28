@@ -1,4 +1,3 @@
-import { warmLessonMedia } from '@/services/offline/cache';
 // @refresh reset
 import { readLearningDraft, clearLearningDraft, useLearningDraft } from '@/services/offline/drafts';
 import { PracticeHeader } from '../../components/PracticeHeader';
@@ -44,7 +43,6 @@ export const WritingPracticeView = ({ hskLevel, topic, wordOrder, onBack, onSubm
         setIsLoading(true);
         const vocabularies = await vocabularyApi.getAllForPractice({ hskLevel, topic });
         if (cancelled) return;
-        void warmLessonMedia(vocabularies);
         const fetchedWords: WritingPracticeWord[] = vocabularies.map(v => ({
           id: v.id.toString(),
           character: v.hanzi,

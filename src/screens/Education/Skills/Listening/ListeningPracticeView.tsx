@@ -1,4 +1,3 @@
-import { useOfflineLesson } from '@/services/offline/useOffline';
 // @refresh reset
 import { readLearningDraft, clearLearningDraft, useLearningDraft } from '@/services/offline/drafts';
 import { PracticeHeader } from '../../components/PracticeHeader';
@@ -180,11 +179,11 @@ function buildFlatData(questions: ListeningPracticeQuestion[]): FlatItem[] {
 // MAIN VIEW
 // ============================================================
 import { educationApi } from '@/services/education/api';
+import { OfflineUnavailableError } from '@/services/offline/transport';
 import { transformQuestionToListening } from '@/services/education/transformers';
 
 export const ListeningPracticeView = ({ hskLevel, practiceSetId, onBack, onSubmit }: Props) => {
   const [questions, setQuestions] = useState<ListeningPracticeQuestion[]>([]);
-  useOfflineLesson(questions);
   const [isLoading, setIsLoading] = useState(true);
   const [sourceVersion, setSourceVersion] = useState('');
   const draftKey = `listening:${practiceSetId}`;
@@ -194,7 +193,7 @@ export const ListeningPracticeView = ({ hskLevel, practiceSetId, onBack, onSubmi
     const fetchQuestions = async () => {
       try {
         setIsLoading(true);
-        const set = await educationApi.getPracticeSetById(practiceSetId);
+        const set = await educationApi.openPracticeSet(practiceSetId);
         if (set.id !== practiceSetId || set.skill !== 'LISTENING' || set.hskLevel !== hskLevel) {
           throw new Error('The selected set is not a listening set for this HSK level.');
         }
@@ -210,7 +209,10 @@ export const ListeningPracticeView = ({ hskLevel, practiceSetId, onBack, onSubmi
           setSourceVersion(version); setQuestions(mappedQuestions); setAnswers(draft.answers || {}); setBookmarks(draft.bookmarks || {});
         }
       } catch (err) {
-        if (!cancelled) { setQuestions([]); AppAlert.error('Không thể tải bài luyện', 'Vui lòng kiểm tra kết nối và mở lại bài luyện.'); }
+        if (!cancelled) { setQuestions([]);
+          AppAlert.error('Không thể tải bài luyện', err instanceof OfflineUnavailableError
+            ? err.message
+            : 'Vui lòng kiểm tra kết nối và mở lại bài luyện.'); }
       } finally {
         if (!cancelled) setIsLoading(false);
       }

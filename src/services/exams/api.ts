@@ -1,4 +1,7 @@
 import { instance } from '../instance';
+import { loadLesson } from '../offline/cache';
+import { OfflineUnavailableError } from '../offline/transport';
+import { isOffline } from '../offline/store';
 import { BackendExam, ExamQueryParams, PaginatedExams } from './types';
 import type { BackendQuestion, PaginatedResponse } from '../education/types';
 
@@ -11,6 +14,9 @@ export class ExamResponseMismatchError extends Error {
 
 const hydrateExamQuestions = async (exam: BackendExam): Promise<BackendExam> => {
   const links = (exam.sections ?? []).flatMap((section) => section.sectionQuestions ?? []);
+  if (isOffline() && exam.access?.canAttempt !== false && !links.length) {
+    throw new OfflineUnavailableError();
+  }
   const missing = new Set(links.filter((link) => !link.question || link.question.id !== link.questionId).map((link) => link.questionId));
   if (!missing.size) return exam;
 
@@ -61,6 +67,14 @@ export const examsApi = {
       })
       .json<PaginatedExams>();
   },
+
+  openExam: (id: number) =>
+    loadLesson(
+      `exam:${id}`,
+      () => examsApi.getExamById(id),
+      (exam) => exam.id === id && exam.access?.canAttempt !== false &&
+        (exam.sections ?? []).some((section) => section.sectionQuestions?.length),
+    ),
 
   getExamById: async (id: number, listedExam?: BackendExam): Promise<BackendExam> => {
     const exam = await instance.get(`exams/${id}`).json<BackendExam>();

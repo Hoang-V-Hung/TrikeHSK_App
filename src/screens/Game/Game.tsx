@@ -18,7 +18,27 @@ import { GameBattleView } from './Battle';
 import { AUTH_QUERY_KEYS, useProfile } from '@/services/auth/useAuth';
 import { getTotalExperience, useExperienceLeaderboard } from '@/services/leaderboard';
 import { usePkGame } from '@/services/game/usePkGame';
-import { PK_HISTORY_QUERY_KEYS, usePkHistory } from '@/services/game/pkHistory';
+import { PK_HISTORY_QUERY_KEYS, usePkHistory, type PkHistoryPage } from '@/services/game/pkHistory';
+
+function HistoryPageButton({ label, disabled, onPress }: {
+  label: string;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={`Trang ${label.toLowerCase()}`}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={{ minHeight: 48, minWidth: 56, justifyContent: 'center', alignItems: 'center', opacity: disabled ? 0.45 : 1 }}
+    >
+      <Text style={{ color: colors.primary, fontSize: ms(14), fontWeight: '600' }}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
 
 export function GameContent({ navigation, route, targetView: propTargetView }: any) {
   const { colors } = useTheme();
@@ -58,8 +78,16 @@ export function GameContent({ navigation, route, targetView: propTargetView }: a
     setInternalViewState(currentTargetView);
   }, [hasRequestedView, currentKey, currentTargetView]);
 
-  const history = usePkHistory(profile?.id, isFocused && viewState === 'main');
-  const matchHistory = history.data?.pages.flatMap(page => page.data) ?? [];
+  const [historyPage, setHistoryPage] = useState(1);
+  const history = usePkHistory(profile?.id, historyPage, isFocused && viewState === 'main');
+  const matchHistory = history.data?.data ?? [];
+  const firstHistoryPage = queryClient.getQueryData<PkHistoryPage>([...PK_HISTORY_QUERY_KEYS.user(profile?.id), 1]);
+  const totalHistoryPages = Math.max(1, history.data?.totalPages ?? firstHistoryPage?.totalPages ?? historyPage);
+  useEffect(() => {
+    if (history.data && historyPage > totalHistoryPages) {
+      setHistoryPage(totalHistoryPages);
+    }
+  }, [history.data, historyPage, totalHistoryPages]);
 
   const setViewState = useCallback((
     newView: 'main' | 'rules' | 'leaderboard' | 'matching' | 'battle'
@@ -75,11 +103,12 @@ export function GameContent({ navigation, route, targetView: propTargetView }: a
     if (!isFocused && (viewState === 'matching' || viewState === 'battle')) setViewState('main');
   }, [isFocused, viewState, setViewState]);
   const handleSearch = () => {
-    if (isOffline()) { AppAlert.warning('PK cần kết nối mạng', 'Hãy bật mạng và tắt chế độ chỉ học ngoại tuyến để tìm đối thủ.'); return; }
+    if (isOffline()) { AppAlert.warning('PK cần kết nối mạng', 'Hãy kết nối mạng để tìm đối thủ.'); return; }
     setMatchAttempt(value => value + 1); setViewState('matching');
   };
 
   const handleBattleComplete = async () => {
+    setHistoryPage(1);
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.profile }),
       queryClient.invalidateQueries({ queryKey: ['leaderboard'] }),
@@ -290,7 +319,7 @@ export function GameContent({ navigation, route, targetView: propTargetView }: a
           {/* Current User Row */}
           <View style={{ alignItems: 'center', backgroundColor: '#FFF5F5', borderRadius: ms(999), flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: hs(16), paddingVertical: vs(12), marginTop: vs(24), alignSelf: 'center', width: '90%' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <UserAvatar photoUrl={profile?.photo?.path} size={ms(32)} backgroundColor="#3730A3" style={{ marginRight: hs(10) }} />
+              <UserAvatar photoUrl={profile?.photo?.path} size={ms(32)} style={{ marginRight: hs(10) }} />
               <View>
                 <Text style={{ color: '#111827', fontSize: ms(16), fontWeight: '800' }}>{profile?.fullName || profile?.username || 'Người chơi'} <Text style={{ color: '#E53935' }}>(Bạn)</Text></Text>
                 <Text style={{ color: '#9E9E9E', fontSize: ms(14), marginTop: vs(1), fontWeight: '500' }}>Level {userLevel}</Text>
@@ -383,7 +412,9 @@ export function GameContent({ navigation, route, targetView: propTargetView }: a
                 {history.isPending
                   ? 'Đang tải lịch sử thi đấu...'
                   : history.isError
-                    ? 'Không thể tải lịch sử. Chạm để thử lại.'
+                    ? isOffline()
+                      ? 'Trang lịch sử này chưa được lưu trên máy.'
+                      : 'Không thể tải lịch sử. Chạm để thử lại.'
                     : 'Hãy bắt đầu chơi ngay nào!'}
               </Text>
             </View>
@@ -444,22 +475,22 @@ export function GameContent({ navigation, route, targetView: propTargetView }: a
               </View>
             ))
           )}
-          {matchHistory.length > 0 && history.hasNextPage ? (
-            <TouchableOpacity
-              accessibilityRole="button"
-              disabled={history.isFetchingNextPage}
-              onPress={() => { void history.fetchNextPage(); }}
-              style={{ minHeight: ms(44), padding: ms(12), alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Text style={{ color: colors.primary, fontSize: ms(14), fontWeight: '600', textAlign: 'center' }}>
-                {history.isFetchingNextPage
-                  ? 'Đang tải thêm...'
-                  : history.isFetchNextPageError
-                    ? 'Chưa tải thêm được. Chạm để thử lại.'
-                    : 'Xem thêm lịch sử'}
+          {(historyPage > 1 || totalHistoryPages > 1) && (
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderTopWidth: 1,
+              borderTopColor: colors.dialogBorder,
+              paddingHorizontal: hs(8),
+            }}>
+              <HistoryPageButton label="Trước" disabled={historyPage <= 1} onPress={() => setHistoryPage(historyPage - 1)} />
+              <Text accessibilityLiveRegion="polite" style={{ color: colors.dialogText, fontSize: ms(13) }}>
+                Trang {historyPage}/{totalHistoryPages}
               </Text>
-            </TouchableOpacity>
-          ) : null}
+              <HistoryPageButton label="Sau" disabled={historyPage >= totalHistoryPages || history.isPending || history.isError} onPress={() => setHistoryPage(historyPage + 1)} />
+            </View>
+          )}
         </View>
 
         {/* Current User Row dưới đáy màn hình chính chuẩn Figma */}
@@ -479,7 +510,7 @@ export function GameContent({ navigation, route, targetView: propTargetView }: a
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <UserAvatar photoUrl={profile?.photo?.path} size={ms(36)} backgroundColor="#3730A3" style={{ marginRight: hs(10) }} />
+            <UserAvatar photoUrl={profile?.photo?.path} size={ms(36)} style={{ marginRight: hs(10) }} />
             <View>
               <Text style={{ color: '#111827', fontSize: ms(15), fontWeight: '800' }}>
                 {profile?.fullName || profile?.username || 'Người chơi'} <Text style={{ color: '#E53935' }}>(Bạn)</Text>

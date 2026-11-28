@@ -106,17 +106,6 @@ export const getPacks = (): OfflinePack[] => {
   });
   return cachedPacks;
 };
-export const commitPack = (pack: OfflinePack, scope: string) => {
-  // Publish a complete manifest only after every file has been written successfully.
-  writeOffline(`pack:${pack.level}`, pack, scope);
-  writeOffline(
-    'levels',
-    [
-      ...new Set([...readOffline<number[]>('levels', [], scope), pack.level]),
-    ].sort(),
-    scope,
-  );
-};
 // Old persisted manual switches are intentionally ignored: connectivity alone controls offline.
 export const isOffline = () => !connected || !backendReachable;
 export const setBackendReachable = (value: boolean) => {

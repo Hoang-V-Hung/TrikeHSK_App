@@ -1,4 +1,3 @@
-import { useOfflineLesson } from '@/services/offline/useOffline';
 // @refresh reset
 import IconButton from '@/components/atoms/IconButton';
 import { PracticeHeader } from '../../components/PracticeHeader';
@@ -35,7 +34,6 @@ type Recording = { durationMs: number; bytes: number; status: 'pending' | 'grade
 export const SpeakingPracticeView = ({ hskLevel, topic, onBack, onSubmit }: Props) => {
   const controlSizes = useControlSizes();
   const [questions, setQuestions] = useState<SpeakingPracticeQuestion[]>([]);
-  useOfflineLesson(questions);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [recordState, setRecordState] = useState<RecordState>('idle');
   const [recordTime, setRecordTime] = useState(0);

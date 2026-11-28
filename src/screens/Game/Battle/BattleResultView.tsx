@@ -93,7 +93,6 @@ export const BattleResultView = ({
                 <UserAvatar
                   photoUrl={photoUrl}
                   size={ms(54)}
-                  backgroundColor={colors.accentLightBlue}
                   style={styles.avatar}
                 />
                 <Text style={styles.name}>Bạn</Text>

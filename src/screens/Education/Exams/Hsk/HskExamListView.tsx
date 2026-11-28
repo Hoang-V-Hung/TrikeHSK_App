@@ -41,8 +41,7 @@ export const HskExamListView = ({ hskLevel, onBack, onSelectExam, examResults, o
     requestInFlight.current = true;
     try {
       const response = await examsApi.getExams({ hskLevel, page: nextPage, limit: 10 });
-      const exams = await Promise.all(response.data.map(async exam =>
-        transformBackendExamToApp(await examsApi.getExamById(exam.id, exam))));
+      const exams = response.data.map((exam) => transformBackendExamToApp(exam, true));
       if (generation.current !== requestGeneration) return;
       setFullList(previous => nextPage === 1 ? exams : [...previous, ...exams]);
       setPage(nextPage);
@@ -71,13 +70,16 @@ export const HskExamListView = ({ hskLevel, onBack, onSelectExam, examResults, o
   }, [loadPage]);
 
   const handlePressExam = (item: HskExam) => {
-    console.log('[HskExamListView] handlePressExam called:', item.id, item.name);
-    if (item.unsupportedSkills?.length) {
-      AppAlert.warning('Đề thi chưa được hỗ trợ', 'Đề này có kỹ năng Nói mà giao diện hiện tại chưa hỗ trợ.');
+    if (item.canAttempt === false) {
+      AppAlert.warning('Đề thi chưa được mở khóa', 'Bạn cần mở khóa đề trước khi làm bài.');
       return;
     }
-    if (!item.questions?.length) {
+    if (item.totalQuestions === 0) {
       AppAlert.warning('Đề thi chưa có câu hỏi', 'Vui lòng chọn đề thi khác.');
+      return;
+    }
+    if (item.unsupportedSkills?.length) {
+      AppAlert.warning('Đề thi chưa được hỗ trợ', 'Đề này có kỹ năng Nói mà giao diện hiện tại chưa hỗ trợ.');
       return;
     }
     setSelectedExam(item);

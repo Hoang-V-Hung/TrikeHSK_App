@@ -1,4 +1,7 @@
 import { instance } from '../instance';
+import { loadLesson } from '../offline/cache';
+import { OfflineUnavailableError } from '../offline/transport';
+import { isOffline } from '../offline/store';
 import {
   BackendPracticeSet,
   BackendTopicSummary,
@@ -34,6 +37,13 @@ const getLessonNumber = (topic: BackendTopicSummary): number => {
   return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
 };
 
+const hasQuestions = (set: BackendPracticeSet) => {
+  const links = set.practiceSetQuestions ?? [];
+  return links.length > 0 &&
+    links.length === (set.totalQuestions ?? links.length) &&
+    links.every((link) => link.question && link.question.id === link.questionId);
+};
+
 export const educationApi = {
   getPracticeSets: async (
     params?: PracticeSetQueryParams,
@@ -57,6 +67,17 @@ export const educationApi = {
     return instance.get(`practice-sets/${id}`).json<BackendPracticeSet>();
   },
 
+  openPracticeSet: (id: number) =>
+    loadLesson(
+      `set:${id}`,
+      async () => {
+        const set = await educationApi.getPracticeSetById(id);
+        if (isOffline() && !hasQuestions(set)) throw new OfflineUnavailableError();
+        return set;
+      },
+      (set) => set.id === id && hasQuestions(set),
+    ),
+
   getAllPracticeSets: async (
     params: Pick<PracticeSetQueryParams, 'hskLevel' | 'topic'> & { skill: BackendQuestionSkill },
   ): Promise<BackendPracticeSet[]> => {
@@ -70,12 +91,17 @@ export const educationApi = {
       page += 1;
     } while (page <= totalPages);
 
-    return Promise.all(sets.sort((a, b) => a.id - b.id).map(set =>
-      set.practiceSetQuestions?.every(link => link.question)
-        && set.practiceSetQuestions.length === (set.totalQuestions ?? set.practiceSetQuestions.length)
-        ? set
-        : educationApi.getPracticeSetById(set.id),
-    ));
+    const details = await Promise.all(sets.sort((a, b) => a.id - b.id).map(async (set) => {
+      if (hasQuestions(set)) return set;
+      try {
+        const detail = await educationApi.getPracticeSetById(set.id);
+        return !isOffline() || hasQuestions(detail) ? detail : null;
+      } catch (error) {
+        if (error instanceof OfflineUnavailableError) return null;
+        throw error;
+      }
+    }));
+    return details.filter((set): set is BackendPracticeSet => set !== null);
   },
 
   getPracticeSetSummaries: async (
@@ -102,7 +128,13 @@ export const educationApi = {
   getPracticeQuestions: async (
     params: Pick<PracticeSetQueryParams, 'hskLevel' | 'topic'> & { skill: BackendQuestionSkill },
   ): Promise<PracticeQuestionEntry[]> => {
-    const details = await educationApi.getAllPracticeSets(params);
+    const details = params.topic
+      ? await loadLesson(
+          `practice-topic:${JSON.stringify([params.skill, params.hskLevel, params.topic])}`,
+          () => educationApi.getAllPracticeSets(params),
+          (sets) => sets.length > 0 && sets.every(hasQuestions),
+        )
+      : await educationApi.getAllPracticeSets(params);
     const seen = new Set<string>();
     return details.flatMap(set => [...(set.practiceSetQuestions ?? [])]
       .sort((a, b) => a.order - b.order)

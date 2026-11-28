@@ -72,6 +72,8 @@ export interface HskExam {
   level: number;
   name: string;
   timeLimit: number;
+  totalQuestions?: number;
+  canAttempt?: boolean;
   listeningCount: number;
   readingCount: number;
   writingCount?: number;

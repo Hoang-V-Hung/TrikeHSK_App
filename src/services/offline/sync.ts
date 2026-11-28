@@ -1,4 +1,6 @@
 import { instance } from '../instance';
+import { cachedLessons, cachedMedia } from './cache';
+import type { BackendPracticeSet } from '../education/types';
 import { getAuthSessionVersion } from '../storage';
 import {
   accountScope,
@@ -13,7 +15,7 @@ import {
   updateLocalResult,
   writeOffline,
 } from './store';
-import type { LocalResult, PendingEvent } from './store';
+import type { LocalResult } from './store';
 import type { VocabularyProgressDto } from '../analytics/types';
 
 const syncing = new Set<string>();
@@ -159,9 +161,8 @@ export async function syncOfflineEvents(): Promise<void> {
   }
 }
 export const practiceContext = (sourceId: number) => {
-  const set = getPacks()
-    .flatMap((pack) => pack.sets)
-    .find((item) => item.id === sourceId);
+  const set = (cachedLessons().find((entry) => entry.key === `set:${sourceId}`)?.body as BackendPracticeSet | undefined)
+    ?? getPacks().flatMap((pack) => pack.sets).find((item) => item.id === sourceId);
   return {
     kind: 'set' as const,
     sourceId,
@@ -189,14 +190,6 @@ export const getOfflineStudySeconds = () =>
     (sum, item) => sum + item.seconds,
     0,
   );
-export const clearSyncErrors = () =>
-  writeOffline(
-    'outbox',
-    getPendingEvents().map(
-      ({ error: _error, blocked: _blocked, ...event }): PendingEvent => event,
-    ),
-  );
-
 const resultObject = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -273,9 +266,12 @@ function portableResult(
   result: Record<string, unknown>,
 ): Record<string, unknown> {
   const originals = new Map(
-    getPacks().flatMap((pack) =>
-      Object.entries(pack.media).map(([url, file]) => [file, url] as const),
-    ),
+    [
+      ...getPacks().flatMap((pack) =>
+        Object.entries(pack.media).map(([url, file]) => [file, url] as const),
+      ),
+      ...cachedMedia().map(({ uri, url }) => [uri, url] as const),
+    ],
   );
   const portable = (value: unknown): unknown => {
     if (typeof value === 'string') return originals.get(value) || value;

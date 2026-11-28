@@ -5,6 +5,7 @@ import { TabActions } from '@react-navigation/native';
 import IconByVariant from '@/components/atoms/IconByVariant/IconByVariant';
 import { TAB_ITEMS } from '@/navigation/tabItems';
 import { ms, useTheme, vs } from '@/theme';
+import OfflineStatus from '@/components/molecules/OfflineStatus';
 
 const TabIcon = memo(IconByVariant);
 const TabButton = memo(function TabButton({
@@ -105,6 +106,8 @@ export const BottomTabBar = memo(function BottomTabBar({
   const options = descriptors[state.routes[state.index].key].options;
   if (keyboardVisible && options.tabBarHideOnKeyboard) return null;
   return (
+    <>
+    <OfflineStatus />
     <Animated.View
       role="tablist"
       style={[
@@ -144,5 +147,6 @@ export const BottomTabBar = memo(function BottomTabBar({
         );
       })}
     </Animated.View>
+    </>
   );
 });

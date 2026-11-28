@@ -1,4 +1,3 @@
-import { useOfflineLesson } from '@/services/offline/useOffline';
 // @refresh reset
 import { readLearningDraft, clearLearningDraft, useLearningDraft, remainingExamSeconds } from '@/services/offline/drafts';
 import { PracticeHeader } from '../../components/PracticeHeader';
@@ -57,6 +56,7 @@ const ExamTimer = ({ deadline, onExpire }: { deadline: number; onExpire: () => v
 import { ActivityIndicator } from 'react-native';
 import { examsApi, ExamResponseMismatchError } from '@/services/exams/api';
 import { transformBackendExamToApp } from '@/services/exams/transformers';
+import { OfflineUnavailableError } from '@/services/offline/transport';
 import { HskExam, ExamQuestion } from '../../types';
 
 export const HskExamTestView = ({ examId, durationMin, onBack, onSubmit, isReviewMode, reviewAnswers, reviewQuestions }: Props) => {
@@ -65,7 +65,6 @@ export const HskExamTestView = ({ examId, durationMin, onBack, onSubmit, isRevie
   const deadline = React.useRef(readLearningDraft(draftKey).deadline || Date.now() + durationMin * 60000).current;
   const submitted = React.useRef(false);
   const [fullExam, setFullExam] = useState<HskExam | null>(null);
-  useOfflineLesson(fullExam);
   const [isLoading, setIsLoading] = useState(true);
   const onBackRef = React.useRef(onBack);
   onBackRef.current = onBack;
@@ -77,7 +76,12 @@ export const HskExamTestView = ({ examId, durationMin, onBack, onSubmit, isRevie
     const fetchExam = async () => {
       try {
         setIsLoading(true);
-        const res = await examsApi.getExamById(Number(examId));
+        const res = await examsApi.openExam(Number(examId));
+        if (cancelled) return;
+        if (res.access?.canAttempt === false) {
+          AppAlert.warning('Đề thi chưa được mở khóa', 'Bạn cần mở khóa đề trước khi làm bài.', [{ text: 'OK', onPress: () => onBackRef.current() }]);
+          return;
+        }
         const examApp = transformBackendExamToApp(res);
         if (cancelled) return;
         if (examApp.unsupportedSkills?.length || !examApp.questions?.length) {
@@ -91,7 +95,7 @@ export const HskExamTestView = ({ examId, durationMin, onBack, onSubmit, isRevie
         setAnswers(reviewAnswers || draft.answers || {});
         setBookmarks(draft.bookmarks || {});
       } catch (err) {
-        if (!cancelled) { setFullExam(null); AppAlert.error('Không thể tải đề thi', err instanceof ExamResponseMismatchError ? err.message : 'Vui lòng kiểm tra kết nối.', [{ text: 'OK', onPress: () => onBackRef.current() }]); }
+        if (!cancelled) { setFullExam(null); AppAlert.error('Không thể tải đề thi', err instanceof ExamResponseMismatchError || err instanceof OfflineUnavailableError ? err.message : 'Vui lòng kiểm tra kết nối.', [{ text: 'OK', onPress: () => onBackRef.current() }]); }
       } finally {
         if (!cancelled) setIsLoading(false);
       }

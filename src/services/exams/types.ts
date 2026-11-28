@@ -13,6 +13,8 @@ export interface BackendExamSection {
   title: string;
   order: number;
   audioUrl?: string | null;
+  skill?: BackendQuestion['skill'];
+  questionCount?: number;
   sectionQuestions?: BackendExamSectionQuestion[];
 }
 
@@ -23,6 +25,7 @@ export interface BackendExam {
   hskLevel: number;
   sections?: BackendExamSection[];
   totalQuestions?: number;
+  access?: { canAttempt: boolean };
   createdAt?: string;
   updatedAt?: string;
 }
